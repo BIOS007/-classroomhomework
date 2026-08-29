@@ -96,6 +96,7 @@ const LS = {
   done: 'cht_done_ids',             // array of completed assignment ids
   repUnlocked: 'cht_rep_unlocked',  // { [classroomId]: true }
   theme: 'chtk_theme',              // 'light' | 'dark'
+  geminiKey: 'cht_gemini_key',      // Gemini API key, stored locally for OCR scanning
 };
 
 const state = {
@@ -328,6 +329,15 @@ function icon(name, cls='w-4 h-4') {
 }
 function renderIcons() { if (window.lucide) lucide.createIcons(); }
 
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result.split(',')[1]);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
 // ---------- DATA LOADING ----------------------------------------------------
 async function loadClassroomData() {
   if (!state.classroom) return;
@@ -362,7 +372,7 @@ function themeToggleBtn() {
 
 function ViewPicker() {
   const grades = [1,2,3,4,5,6];
-  const rooms = Array.from({length:12},(_,i)=>i+1);
+  const rooms = Array.from({length:20},(_,i)=>i+1);
   return `
   <div class="p-5 fade-in">
     <div class="flex items-center justify-between mb-1">
@@ -623,9 +633,12 @@ function renderSubjectManager() {
         <h3 class="font-extrabold text-lg text-slate-900 dark:text-white">จัดการรายวิชา</h3>
         <button id="modal-close" class="${closeBtnCls}">${icon('x','w-4 h-4')}</button>
       </div>
-      <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">เพิ่ม แก้ไข หรือลบรายวิชาในห้องนี้</p>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">เพิ่มด้วยตนเอง หรือสแกนตารางเรียนด้วย AI</p>
 
-      <button id="add-subject-btn" class="w-full mb-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-sm flex items-center justify-center gap-1.5">${icon('plus','w-4 h-4')} เพิ่มวิชา</button>
+      <div class="flex gap-2 mb-4">
+        <button id="scan-timetable-btn" class="flex-1 py-2.5 rounded-xl bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold text-sm flex items-center justify-center gap-1.5">${icon('scan-line','w-4 h-4')} สแกนตารางเรียน</button>
+        <button id="add-subject-btn" class="flex-1 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-sm flex items-center justify-center gap-1.5">${icon('plus','w-4 h-4')} เพิ่มวิชาเอง</button>
+      </div>
 
       <div id="subject-list" class="space-y-2">
         ${state.subjects.length ? state.subjects.map(s => {
@@ -651,6 +664,7 @@ function renderSubjectManager() {
   document.getElementById('modal-close').onclick = closeModal;
   document.getElementById('modal-backdrop').addEventListener('click', e => { if (e.target.id==='modal-backdrop') closeModal(); });
   document.getElementById('add-subject-btn').onclick = () => { state.editingSubject = null; renderSubjectForm(); };
+  document.getElementById('scan-timetable-btn').onclick = renderOcrScanner;
   document.querySelectorAll('[data-preview]').forEach(b => b.onclick = () => renderImagePreviewModal(b.dataset.preview));
   document.querySelectorAll('[data-edit-subject]').forEach(b => b.onclick = () => {
     state.editingSubject = state.subjects.find(s => s.id === b.dataset.editSubject);
@@ -675,6 +689,189 @@ function renderSubjectManager() {
       if (b.isConnected) b.disabled = false;
     }
   });
+}
+
+// ----- Timetable OCR scanner (Gemini Vision) with deduplication -----
+function renderOcrScanner() {
+  const key = localStorage.getItem(LS.geminiKey) || '';
+  document.getElementById('modal-root').innerHTML = modalShell(`
+    <div class="p-5">
+      <div class="flex items-center justify-between mb-1">
+        <h3 class="font-extrabold text-lg text-slate-900 dark:text-white flex items-center gap-2">
+          ${icon('scan-line','w-5 h-5 text-brand-600 dark:text-brand-400')} สแกนตารางเรียนด้วย AI
+        </h3>
+        <button id="modal-close" class="${closeBtnCls}">${icon('x','w-4 h-4')}</button>
+      </div>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
+        อัปโหลดรูปตารางเรียน ระบบจะคัดกรองเฉพาะรายวิชาที่ไม่ซ้ำกันให้อัตโนมัติ
+      </p>
+
+      <div class="mb-3">
+        <label class="${labelCls}">Gemini API Key <span class="font-normal text-slate-400 dark:text-slate-500">(บันทึกในเครื่องนี้เท่านั้น)</span></label>
+        <input id="gemini-key" type="password" value="${esc(key)}" placeholder="AIza..." class="${inputCls} num">
+      </div>
+
+      <div id="ocr-drop" class="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl2 p-6 text-center cursor-pointer hover:border-brand-500 dark:hover:border-brand-500 transition">
+        <input id="ocr-file" type="file" accept="image/*" capture="environment" class="hidden">
+        <div id="ocr-drop-content">
+          ${icon('image-plus','w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2')}
+          <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">แตะเพื่อเลือกรูปตารางเรียน</div>
+          <div class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">รองรับ JPG, PNG</div>
+        </div>
+      </div>
+
+      <div id="ocr-result" class="mt-4"></div>
+    </div>
+  `, { wide: true });
+  renderIcons();
+
+  document.getElementById('modal-close').onclick = () => renderSubjectManager();
+  document.getElementById('modal-backdrop').addEventListener('click', e => { if (e.target.id === 'modal-backdrop') renderSubjectManager(); });
+
+  const fileInput = document.getElementById('ocr-file');
+  document.getElementById('ocr-drop').onclick = () => fileInput.click();
+
+  fileInput.onchange = async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const apiKey = document.getElementById('gemini-key').value.trim();
+    if (!apiKey) { toast('กรุณากรอก Gemini API Key ก่อน', 'error'); return; }
+    localStorage.setItem(LS.geminiKey, apiKey);
+
+    const resultEl = document.getElementById('ocr-result');
+    resultEl.innerHTML = `
+      <div class="flex items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400 py-6">
+        <div class="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+        กำลังอ่านตารางเรียนและตัดวิชาที่ซ้ำออก...
+      </div>`;
+
+    try {
+      const base64 = await fileToBase64(file);
+      const prompt = `You are an expert OCR parser for Thai high school weekly timetables (ตารางเรียน).
+Analyze the timetable image and extract all UNIQUE academic subjects taught during the week.
+
+Rules:
+1. Deduplication is MANDATORY: Each subject must appear ONLY ONCE in the list, even if it is scheduled multiple times across different days or periods.
+2. Ignore non-academic activities: "กิจกรรม", "ที่ปรึกษา", "หน้าเสาธง", "โฮมรูม", "คุณธรรม", "ชุมนุม", "แนะแนว", "ลส/ยว/รด", "จิตอาสา", or lunch breaks.
+3. Clean teacher names: retain "ครู" prefix (e.g. ครูศิวาพร, ครูอรรถพล).
+4. Output strictly a JSON array without markdown formatting or code blocks.
+Format:
+[
+  {
+    "subject_code": "ค32101",
+    "subject_name": "คณิตศาสตร์พื้นฐาน",
+    "teacher_name": "ครูศิวาพร"
+  }
+]`;
+
+      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [
+            { text: prompt },
+            { inline_data: { mime_type: file.type || 'image/jpeg', data: base64 } }
+          ]}]
+        })
+      });
+
+      const json = await resp.json();
+      if (json.error) throw new Error(json.error.message || 'Gemini API error');
+
+      let text = json.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '[]';
+      text = text.replace(/```json|```/g, '').trim();
+
+      let items;
+      try { items = JSON.parse(text); } catch (e) { throw new Error('อ่านผลลัพธ์ไม่สำเร็จ ลองรูปที่ชัดขึ้น'); }
+      if (!Array.isArray(items) || !items.length) throw new Error('ไม่พบรายวิชาในรูปภาพนี้');
+
+      // Secondary client-side deduplication safeguard, in case the model
+      // still returns a subject more than once across the week's periods.
+      const seen = new Set();
+      const uniqueItems = [];
+      for (const item of items) {
+        const code = (item.subject_code || '').trim();
+        if (code && !seen.has(code)) {
+          seen.add(code);
+          uniqueItems.push(item);
+        }
+      }
+      if (!uniqueItems.length) throw new Error('ไม่พบรหัสวิชาที่อ่านได้ในรูปภาพนี้');
+
+      renderOcrPreview(uniqueItems);
+    } catch (err) {
+      console.error(err);
+      resultEl.innerHTML = `<div class="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 rounded-xl p-3">${esc(err.message || 'เกิดข้อผิดพลาดในการสแกน')}</div>`;
+    }
+  };
+}
+
+function renderOcrPreview(items) {
+  const resultEl = document.getElementById('ocr-result');
+  resultEl.innerHTML = `
+    <div class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 flex items-center justify-between">
+      <span>พบ ${items.length} วิชาที่ไม่ซ้ำกัน</span>
+      <span class="text-[11px] text-brand-600 dark:text-brand-400">ตรวจสอบก่อนบันทึก</span>
+    </div>
+    <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+      ${items.map((it, i) => `
+        <div class="flex gap-1.5 items-center bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-100 dark:border-slate-800" data-ocr-row="${i}">
+          <input data-ocr-code="${i}" value="${esc(it.subject_code)}" placeholder="รหัสวิชา" class="w-24 shrink-0 px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none">
+          <input data-ocr-name="${i}" value="${esc(it.subject_name)}" placeholder="ชื่อวิชา" class="flex-1 min-w-0 px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 outline-none">
+          <input data-ocr-teacher="${i}" value="${esc(it.teacher_name)}" placeholder="ครูผู้สอน" class="flex-1 min-w-0 px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 outline-none">
+          <button data-ocr-remove="${i}" class="w-7 h-7 shrink-0 rounded-lg bg-red-50 dark:bg-red-500/10 grid place-items-center text-red-500 dark:text-red-400">${icon('x','w-3.5 h-3.5')}</button>
+        </div>`).join('')}
+    </div>
+    <button id="ocr-save-all" class="w-full mt-4 py-3 rounded-xl bg-brand-600 text-white font-bold text-sm flex items-center justify-center gap-2">
+      ${icon('check','w-4 h-4')} บันทึก ${items.length} วิชาลงห้องเรียน
+    </button>
+  `;
+  renderIcons();
+
+  document.querySelectorAll('[data-ocr-remove]').forEach(b => {
+    b.onclick = () => {
+      const row = document.querySelector(`[data-ocr-row="${b.dataset.ocrRemove}"]`);
+      if (row) row.remove();
+      const remaining = document.querySelectorAll('[data-ocr-row]').length;
+      const saveBtn = document.getElementById('ocr-save-all');
+      if (saveBtn) saveBtn.innerHTML = `${icon('check','w-4 h-4')} บันทึก ${remaining} วิชาลงห้องเรียน`;
+      renderIcons();
+    };
+  });
+
+  const saveBtn = document.getElementById('ocr-save-all');
+  saveBtn.onclick = async () => {
+    const rows = [...document.querySelectorAll('[data-ocr-row]')];
+    const payload = rows.map(r => {
+      const i = r.dataset.ocrRow;
+      return {
+        classroom_id: state.classroom.id,
+        subject_code: document.querySelector(`[data-ocr-code="${i}"]`).value.trim(),
+        subject_name: document.querySelector(`[data-ocr-name="${i}"]`).value.trim(),
+        teacher_name: document.querySelector(`[data-ocr-teacher="${i}"]`).value.trim(),
+      };
+    }).filter(p => p.subject_code);
+
+    if (!payload.length) { toast('ไม่มีข้อมูลให้บันทึก', 'error'); return; }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'กำลังบันทึกลงฐานข้อมูล...';
+
+    try {
+      const sb = await ensureSupabase();
+      if (!sb) return;
+      const { error } = await sb.from('subjects').insert(payload);
+      if (error) throw error;
+      toast(`บันทึก ${payload.length} รายวิชาเรียบร้อยแล้ว`, 'success');
+      await loadClassroomData();
+      renderSubjectManager();
+    } catch (e) {
+      console.error(e);
+      toast('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง', 'error');
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'บันทึกทั้งหมดลงห้องเรียน';
+    }
+  };
 }
 
 function imageFieldPreview(url, id) {
