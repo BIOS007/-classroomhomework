@@ -126,6 +126,7 @@ const LS = {
   theme: 'chtk_theme',              // 'light' | 'dark'
   geminiKey: 'cht_gemini_key',      // Gemini API key, stored locally for OCR scanning
   smartSort: 'cht_smart_sort',      // '1' | '0' — Smart Priority Sort toggle, remembered per device
+  showWorkload: 'cht_show_workload', // '1' | '0' — Weekly Workload Dashboard visibility, remembered per device
 };
 
 const state = {
@@ -143,12 +144,14 @@ const state = {
   editingAssignment: null,
   editingSubject: null,
   smartSort: false,          // Smart Priority Sort toggle (§3.2)
+  showWorkload: false,       // Weekly Workload Dashboard visibility — collapsed by default
 };
 
 function loadLocal() {
   try { state.doneIds = new Set(JSON.parse(localStorage.getItem(LS.done) || '[]')); } catch(e) { state.doneIds = new Set(); }
   try { state.classroom = JSON.parse(localStorage.getItem(LS.classroom) || 'null'); } catch(e) { state.classroom = null; }
   try { state.smartSort = localStorage.getItem(LS.smartSort) === '1'; } catch(e) { state.smartSort = false; }
+  try { state.showWorkload = localStorage.getItem(LS.showWorkload) === '1'; } catch(e) { state.showWorkload = false; }
 }
 function saveDone() { localStorage.setItem(LS.done, JSON.stringify([...state.doneIds])); }
 
@@ -691,6 +694,7 @@ function ViewDashboard() {
           </div>
         </div>
         <div class="flex items-center gap-2">
+          <button id="workload-toggle-btn" class="w-9 h-9 rounded-xl ${state.showWorkload ? 'bg-brand-600 text-white' : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-800'} shadow-card grid place-items-center shrink-0" title="แสดง/ซ่อนภาระงานสัปดาห์นี้">📊</button>
           <button id="refresh-btn" class="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 shadow-card border border-slate-200 dark:border-slate-800 grid place-items-center text-slate-500 dark:text-slate-300 shrink-0" title="รีเฟรชข้อมูล">${icon('refresh-cw','w-4 h-4')}</button>
           <button id="line-share-btn" class="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 shadow-card border border-slate-200 dark:border-slate-800 grid place-items-center text-emerald-600 dark:text-emerald-400 shrink-0" title="แชร์สรุปการบ้านไป LINE">${icon('share-2','w-4 h-4')}</button>
           ${themeToggleBtn()}
@@ -724,7 +728,7 @@ function ViewDashboard() {
     </div>
 
     <div class="px-5 pt-2 space-y-3">
-      ${renderWorkloadDashboard()}
+      ${state.showWorkload ? `<div class="rise-in">${renderWorkloadDashboard()}</div>` : ''}
 
       <button id="smart-sort-toggle" class="w-full py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${state.smartSort ? 'bg-amber-500 border-amber-500 text-white' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'}">
         ${icon('zap', 'w-3.5 h-3.5')} ${state.smartSort ? 'กำลังเรียงตามความเร่งด่วน (Smart Sort)' : 'เรียงตามความเร่งด่วน (Smart Sort)'}
@@ -1731,6 +1735,11 @@ function wireEvents() {
       if (state.repMode) { state.repMode = false; render(); return; }
       if (isRepUnlocked(state.classroom.id)) { state.repMode = true; render(); return; }
       renderRepGate();
+    };
+    document.getElementById('workload-toggle-btn').onclick = () => {
+      state.showWorkload = !state.showWorkload;
+      try { localStorage.setItem(LS.showWorkload, state.showWorkload ? '1' : '0'); } catch(e) {}
+      render();
     };
     document.getElementById('smart-sort-toggle').onclick = () => {
       state.smartSort = !state.smartSort;
