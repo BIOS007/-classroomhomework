@@ -145,6 +145,7 @@ const state = {
   editingSubject: null,
   smartSort: false,          // Smart Priority Sort toggle (§3.2)
   showWorkload: false,       // Weekly Workload Dashboard visibility — collapsed by default
+  expandedDescriptions: new Set(), // ids of homework cards with "ดูเพิ่มเติม" expanded (session-only)
 };
 
 function loadLocal() {
@@ -866,6 +867,23 @@ function subjectAvatar(subj, col) {
   return `<div class="w-8 h-8 rounded-lg shrink-0 grid place-items-center font-bold text-[11px] ${col.bg} ${col.text}">${esc((subj?.subject_code||'?').slice(0,2))}</div>`;
 }
 
+// Renders an assignment's description with line breaks preserved
+// (whitespace-pre-line, so "ข้อ 1. / ข้อ 2." style text stays on separate
+// lines) and a "ดูเพิ่มเติม / ย่อลง" toggle for long text instead of a hard
+// line-clamp cutoff. Expand state lives in state.expandedDescriptions and is
+// intentionally session-only (not persisted) — it just resets on reload.
+const DESCRIPTION_TRUNCATE_LENGTH = 150;
+function renderDescription(a) {
+  const desc = a.description || '';
+  const isLong = desc.length > DESCRIPTION_TRUNCATE_LENGTH;
+  const expanded = state.expandedDescriptions.has(a.id);
+  const shown = (!isLong || expanded) ? desc : desc.slice(0, DESCRIPTION_TRUNCATE_LENGTH).trimEnd() + '…';
+  return `
+    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 whitespace-pre-line">${esc(shown)}</p>
+    ${isLong ? `<button data-desc-toggle="${a.id}" class="text-xs font-bold text-brand-600 dark:text-brand-400 mt-0.5">${expanded ? 'ย่อลง' : 'ดูเพิ่มเติม...'}</button>` : ''}
+  `;
+}
+
 function renderCard(a) {
   const subj = state.subjects.find(s => s.id === a.subject_id);
   const col = subj ? colorForSubject(subj.subject_code) : { bg:'bg-slate-100 dark:bg-slate-800', text:'text-slate-600 dark:text-slate-300' };
@@ -895,7 +913,7 @@ function renderCard(a) {
     <div class="flex gap-3">
       <div class="flex-1 min-w-0">
         <h3 class="font-bold text-slate-900 dark:text-white leading-snug ${done?'line-through decoration-2':''}">${esc(a.title)}</h3>
-        ${a.description ? `<p class="text-sm text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">${esc(a.description)}</p>` : ''}
+        ${a.description ? renderDescription(a) : ''}
         ${subj?.teacher_name ? `<div class="text-xs text-slate-400 dark:text-slate-500 mt-1.5 flex items-center gap-1">
           ${subj.teacher_image_url ? `<img src="${esc(subj.teacher_image_url)}" class="w-4 h-4 rounded-full object-cover">` : icon('user-round','w-3 h-3')}
           ${esc(subj.teacher_name)}
@@ -1420,7 +1438,7 @@ function renderAssignmentForm() {
         </div>
         <div>
           <label class="${labelCls}">รายละเอียด</label>
-          <textarea id="f-desc" rows="3" placeholder="คำสั่งงานเพิ่มเติม..." class="${inputCls} resize-none">${esc(a.description)}</textarea>
+          <textarea id="f-desc" rows="5" placeholder="คำสั่งงานเพิ่มเติม..." class="${inputCls} min-h-[120px] resize-y">${esc(a.description)}</textarea>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
@@ -1782,6 +1800,12 @@ function wireEvents() {
       if (isRepUnlocked(state.classroom.id)) { state.repMode = true; render(); return; }
       renderRepGate();
     };
+    document.querySelectorAll('[data-desc-toggle]').forEach(b => b.onclick = () => {
+      const id = b.dataset.descToggle;
+      if (state.expandedDescriptions.has(id)) state.expandedDescriptions.delete(id);
+      else state.expandedDescriptions.add(id);
+      render();
+    });
     document.getElementById('workload-toggle-btn').onclick = () => {
       state.showWorkload = !state.showWorkload;
       try { localStorage.setItem(LS.showWorkload, state.showWorkload ? '1' : '0'); } catch(e) {}
