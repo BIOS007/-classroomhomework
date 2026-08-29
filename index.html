@@ -5,6 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>ห้องนี้มีการบ้าน — Classroom Homework Tracking Hub</title>
 
+<!-- Mobile PWA meta -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ห้องนี้มีการบ้าน">
+<meta name="theme-color" content="#3a6cf5">
+
+<!-- Open Graph -->
+<meta property="og:title" content="ห้องนี้มีการบ้าน — Classroom Homework Tracking Hub">
+<meta property="og:description" content="ติดตามการบ้านและเอกสารประจำห้องเรียน ม.1 - ม.6 พร้อมแจ้งเตือนกำหนดส่งแบบเรียลไทม์">
+<meta property="og:type" content="website">
+
 <!-- Apply saved theme before first paint to avoid a light->dark flash -->
 <script>
 (function () {
@@ -229,6 +241,29 @@ function dueBadge(dueDateStr) {
     return { label: 'ส่งพรุ่งนี้', cls: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20', icon: 'clock' };
   }
   return { label: `เหลืออีก ${diffDays} วัน`, cls: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20', icon: 'calendar' };
+}
+
+// Builds a formatted plain-text summary of pending assignments (with countdown
+// badges) for sharing to LINE — sorted by due date, ready to paste or share.
+function buildLineShareSummary() {
+  const c = state.classroom;
+  const pending = state.assignments
+    .filter(a => !state.doneIds.has(a.id))
+    .sort((x, y) => new Date(x.due_date) - new Date(y.due_date));
+
+  const lines = [`📚 สรุปการบ้าน ${GRADE_TH[c.grade_level]}/${c.room_number}`, ''];
+  if (!pending.length) {
+    lines.push('ไม่มีการบ้านค้างส่งตอนนี้ 🎉');
+  } else {
+    pending.forEach(a => {
+      const subj = state.subjects.find(s => s.id === a.subject_id);
+      const badge = dueBadge(a.due_date);
+      lines.push(`• [${badge.label}] ${a.title}${subj?.subject_code ? ` (${subj.subject_code})` : ''}`);
+      lines.push(`  กำหนดส่ง: ${fmtDateTime(a.due_date)}`);
+    });
+  }
+  lines.push('', `🔗 ${window.location.href}`);
+  return lines.join('\n');
 }
 
 function toast(msg, type='default') {
@@ -507,6 +542,8 @@ function ViewDashboard() {
           </div>
         </div>
         <div class="flex items-center gap-2">
+          <button id="refresh-btn" class="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 shadow-card border border-slate-200 dark:border-slate-800 grid place-items-center text-slate-500 dark:text-slate-300 shrink-0" title="รีเฟรชข้อมูล">${icon('refresh-cw','w-4 h-4')}</button>
+          <button id="line-share-btn" class="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 shadow-card border border-slate-200 dark:border-slate-800 grid place-items-center text-emerald-600 dark:text-emerald-400 shrink-0" title="แชร์สรุปการบ้านไป LINE">${icon('share-2','w-4 h-4')}</button>
           ${themeToggleBtn()}
           <button id="rep-mode-btn" class="h-9 px-3 rounded-xl ${state.repMode?'bg-brand-600 text-white':'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 shadow-card border border-slate-200 dark:border-slate-800'} flex items-center gap-1.5 text-xs font-bold shrink-0">
             ${icon('key-round','w-3.5 h-3.5')} ${state.repMode ? 'โหมดตัวแทนห้อง' : 'ตัวแทนห้อง'}
@@ -1410,6 +1447,38 @@ function wireEvents() {
 
   if (state.view === 'dashboard') {
     if (state.repMode && !isRepUnlocked(state.classroom.id)) state.repMode = false;
+
+    document.getElementById('refresh-btn').onclick = async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      const iconEl = btn.querySelector('[data-lucide]');
+      if (iconEl) iconEl.classList.add('spin');
+      try {
+        await loadClassroomData();
+        toast('อัปเดตข้อมูลล่าสุดแล้ว', 'success');
+      } catch (err) {
+        console.error(err);
+        toast('รีเฟรชไม่สำเร็จ ลองใหม่อีกครั้ง', 'error');
+      } finally {
+        if (btn.isConnected) btn.disabled = false;
+      }
+    };
+
+    document.getElementById('line-share-btn').onclick = async () => {
+      const summary = buildLineShareSummary();
+      const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(summary)}`;
+      try {
+        window.open(lineUrl, '_blank', 'noopener');
+      } catch (e) {
+        // Popup blocked or unavailable — fall back to clipboard below.
+      }
+      try {
+        await navigator.clipboard.writeText(summary);
+        toast('คัดลอกสรุปการบ้านแล้ว วางในแชท LINE ได้เลย', 'success');
+      } catch (e) {
+        toast('เปิด LINE เพื่อแชร์สรุปการบ้านแล้ว', 'success');
+      }
+    };
 
     document.getElementById('switch-room').onclick = async () => {
       const ok = await confirmDialog({ title:'เปลี่ยนห้องเรียน', message:'ต้องการออกจากห้องนี้และเลือกห้องใหม่หรือไม่?', confirmLabel:'เปลี่ยนห้อง' });
