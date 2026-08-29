@@ -5,6 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>ห้องนี้มีการบ้าน — Classroom Homework Tracking Hub</title>
 
+<!-- Apply saved theme before first paint to avoid a light->dark flash -->
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('chtk_theme');
+    var wantsDark = t === 'dark' || (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (wantsDark) document.documentElement.classList.add('dark');
+  } catch (e) {}
+})();
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -15,6 +26,7 @@
 
 <script>
   tailwind.config = {
+    darkMode: 'class',
     theme: {
       extend: {
         fontFamily: {
@@ -22,11 +34,6 @@
           num: ['Inter', '"Noto Sans Thai"', 'sans-serif'],
         },
         colors: {
-          ink: {
-            50:  '#f6f7f9', 100: '#eceef2', 200: '#dbdfe6', 300: '#b9c0cc',
-            400: '#8b95a5', 500: '#636f82', 600: '#4a5468', 700: '#3a4254',
-            800: '#272c3a', 900: '#181b24',
-          },
           brand: {
             50: '#eef4ff', 100: '#dee8ff', 200: '#b9cfff', 300: '#8bb0ff',
             400: '#5c8dff', 500: '#3a6cf5', 600: '#2a52d6', 700: '#233fac',
@@ -34,8 +41,8 @@
           },
         },
         boxShadow: {
-          card: '0 1px 2px rgba(24,27,36,0.04), 0 1px 12px rgba(24,27,36,0.06)',
-          pop: '0 8px 30px rgba(24,27,36,0.14)',
+          card: '0 1px 2px rgba(15,23,42,0.04), 0 1px 12px rgba(15,23,42,0.06)',
+          pop: '0 8px 30px rgba(15,23,42,0.16)',
         },
         borderRadius: { xl2: '1.25rem' },
       }
@@ -44,65 +51,67 @@
 </script>
 
 <style>
-  html, body { font-family: 'Noto Sans Thai', 'Inter', sans-serif; background:#f6f7f9; }
+  html, body { font-family: 'Noto Sans Thai', 'Inter', sans-serif; }
   .num { font-family: 'Inter', 'Noto Sans Thai', sans-serif; font-variant-numeric: tabular-nums; }
   ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-thumb { background: #dbdfe6; border-radius: 8px; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+  .dark ::-webkit-scrollbar-thumb { background: #334155; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   .fade-in { animation: fadeIn .18s ease-out; }
   @keyframes fadeIn { from { opacity:0; transform: translateY(4px);} to {opacity:1; transform: translateY(0);} }
   .rise-in { animation: riseIn .22s cubic-bezier(.2,.8,.2,1); }
   @keyframes riseIn { from { opacity:0; transform: translateY(16px);} to {opacity:1; transform: translateY(0);} }
-  .skeleton { background: linear-gradient(90deg,#eceef2 25%,#f6f7f9 37%,#eceef2 63%); background-size: 400% 100%; animation: sk 1.4s ease infinite; }
+  .skeleton { background: linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 37%,#e2e8f0 63%); background-size: 400% 100%; animation: sk 1.4s ease infinite; }
+  .dark .skeleton { background: linear-gradient(90deg,#1e293b 25%,#334155 37%,#1e293b 63%); background-size: 400% 100%; }
   @keyframes sk { 0%{background-position:100% 50%} 100%{background-position:0 50%} }
-  .toggle-check:checked + .toggle-dot { transform: translateX(1.25rem); background:#3a6cf5; }
-  .toggle-check:checked ~ .toggle-track { background:#dee8ff; }
-  [data-tab].active { color:#2a52d6; border-color:#2a52d6; }
   .line-clamp-2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
   .line-clamp-3 { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+  .spin { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
-<body class="min-h-screen text-ink-800 font-thai">
+<body class="min-h-screen font-thai bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors">
 
 <div id="toast-root" class="fixed top-3 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-2 items-center w-full px-4 pointer-events-none"></div>
 <div id="modal-root"></div>
-<div id="app" class="max-w-xl mx-auto min-h-screen bg-ink-50 pb-24"></div>
+<div id="app" class="max-w-xl mx-auto min-h-screen bg-slate-100 dark:bg-slate-950 pb-24 transition-colors"></div>
 
 <script>
 /* ============================================================================
-   Classroom Homework Tracking Hub — single-file app
-   Sections: state/config, supabase helpers, utils, toast/confirm/modal,
-   views (settings, classroom picker, dashboard, rep mode, subject manager,
-   ocr scanner, assignment form), router/render.
+   ห้องนี้มีการบ้าน — Classroom Homework Tracking Hub — single-file app
+   Sections: config/state, supabase client, utils (time/badges/theme/toast),
+   data loading, views (picker, dashboard), modals (rep gate, subject manager,
+   subject form, assignment form, image lightbox), router, boot.
    ============================================================================ */
 
-// ---------- STATE ----------------------------------------------------------
+// ---------- HARDCODED SUPABASE CONFIG ---------------------------------------
+const SUPABASE_URL = "https://jaqdgehwqqaowzrxabgg.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphcWRnZWh3cXFhb3d6cnhhYmdnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5NzIzMTcsImV4cCI6MjEwMzU0ODMxN30.6xiNIP_mmqRWuudWzhSwNPYJoVRvudd-Djbs_lBi090";
+const STORAGE_BUCKET = "homework-images";
+
+// ---------- STATE ------------------------------------------------------------
 const LS = {
-  config: 'chtk_supabase_config',
-  classroom: 'chtk_classroom',      // { id, grade, room }
+  classroom: 'chtk_classroom',      // { id, grade_level, room_number }
   done: 'cht_done_ids',             // array of completed assignment ids
   repUnlocked: 'cht_rep_unlocked',  // { [classroomId]: true }
-  geminiKey: 'cht_gemini_key',
+  theme: 'chtk_theme',              // 'light' | 'dark'
 };
 
 const state = {
-  view: 'boot',            // boot | settings | picker | dashboard
+  view: 'boot',              // boot | picker | dashboard
   supabase: null,
-  classroom: null,          // {id, grade_level, room_number}
+  classroom: null,           // {id, grade_level, room_number}
   subjects: [],
   assignments: [],
-  filter: 'all',            // all | pending | done
+  filter: 'all',              // all | pending | done
   search: '',
   subjectFilter: 'all',
   doneIds: new Set(),
   repMode: false,
   loading: false,
-  showRepGate: false,
-  showSubjectManager: false,
-  showOcr: false,
-  showAssignmentForm: false,
   editingAssignment: null,
   editingSubject: null,
-  previewImage: null,
 };
 
 function loadLocal() {
@@ -111,12 +120,6 @@ function loadLocal() {
 }
 function saveDone() { localStorage.setItem(LS.done, JSON.stringify([...state.doneIds])); }
 
-function getConfig() {
-  try { return JSON.parse(localStorage.getItem(LS.config) || 'null'); } catch(e) { return null; }
-}
-function setConfig(url, key) {
-  localStorage.setItem(LS.config, JSON.stringify({ url, key }));
-}
 function isRepUnlocked(classroomId) {
   try {
     const m = JSON.parse(localStorage.getItem(LS.repUnlocked) || '{}');
@@ -132,24 +135,13 @@ function setRepUnlocked(classroomId) {
 
 // ---------- SUPABASE ----------------------------------------------------------
 function initSupabase() {
-  state.supabase = null;
-  const cfg = getConfig();
-  if (!cfg) return null;
-  const url = (cfg.url || '').trim();
-  const key = (cfg.key || '').trim();
-  if (!url || !key) return null;
-
-  // The UMD bundle from the CDN exposes a global `supabase` object with a
-  // `createClient` factory. If the CDN script failed to load (network issue,
-  // ad blocker, wrong URL), that global won't exist — guard for it instead
-  // of letting `supabase.createClient` throw a raw ReferenceError.
   const sdk = (typeof window !== 'undefined' && window.supabase) ? window.supabase : (typeof supabase !== 'undefined' ? supabase : null);
   if (!sdk || typeof sdk.createClient !== 'function') {
     console.error('Supabase SDK not available — check that the CDN script tag loaded.');
     return null;
   }
   try {
-    state.supabase = sdk.createClient(url, key);
+    state.supabase = sdk.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     return state.supabase;
   } catch (e) {
     console.error('Failed to create Supabase client:', e);
@@ -158,18 +150,24 @@ function initSupabase() {
   }
 }
 
-// Lazily guarantees a Supabase client exists before any DB call. If one
-// isn't ready yet, tries to (re)initialize from saved config once; if that
-// still fails, surfaces a toast and sends the user to Settings instead of
-// letting a `null.from(...)` TypeError crash a click handler mid-flight.
+// Lazily guarantees a Supabase client exists before any DB call, retrying
+// initialization once if the CDN script was still loading. Surfaces a toast
+// instead of letting a `null.from(...)` TypeError crash a click handler.
 async function ensureSupabase() {
   if (state.supabase) return state.supabase;
   initSupabase();
   if (state.supabase) return state.supabase;
-  toast('ยังไม่ได้เชื่อมต่อ Supabase กรุณาตั้งค่า URL และ Key ก่อนใช้งาน', 'error');
-  state.view = 'settings';
-  render();
+  toast('เชื่อมต่อฐานข้อมูลไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่', 'error');
   return null;
+}
+
+// ---------- THEME ----------------------------------------------------------
+function isDarkMode() { return document.documentElement.classList.contains('dark'); }
+function toggleTheme() {
+  const html = document.documentElement;
+  const dark = html.classList.toggle('dark');
+  try { localStorage.setItem(LS.theme, dark ? 'dark' : 'light'); } catch(e) {}
+  render();
 }
 
 // ---------- UTILS ----------------------------------------------------------
@@ -181,14 +179,14 @@ function esc(s) {
 const GRADE_TH = { 1:'ม.1', 2:'ม.2', 3:'ม.3', 4:'ม.4', 5:'ม.5', 6:'ม.6' };
 
 const SUBJECT_PALETTE = [
-  { bg:'bg-blue-50',   text:'text-blue-700',   dot:'bg-blue-500' },
-  { bg:'bg-violet-50', text:'text-violet-700', dot:'bg-violet-500' },
-  { bg:'bg-emerald-50',text:'text-emerald-700',dot:'bg-emerald-500' },
-  { bg:'bg-amber-50',  text:'text-amber-700',  dot:'bg-amber-500' },
-  { bg:'bg-rose-50',   text:'text-rose-700',   dot:'bg-rose-500' },
-  { bg:'bg-cyan-50',   text:'text-cyan-700',   dot:'bg-cyan-500' },
-  { bg:'bg-fuchsia-50',text:'text-fuchsia-700',dot:'bg-fuchsia-500' },
-  { bg:'bg-lime-50',   text:'text-lime-700',   dot:'bg-lime-600' },
+  { bg:'bg-blue-50 dark:bg-blue-500/10',       text:'text-blue-700 dark:text-blue-400',       dot:'bg-blue-500' },
+  { bg:'bg-violet-50 dark:bg-violet-500/10',   text:'text-violet-700 dark:text-violet-400',   dot:'bg-violet-500' },
+  { bg:'bg-emerald-50 dark:bg-emerald-500/10', text:'text-emerald-700 dark:text-emerald-400', dot:'bg-emerald-500' },
+  { bg:'bg-amber-50 dark:bg-amber-500/10',     text:'text-amber-700 dark:text-amber-400',     dot:'bg-amber-500' },
+  { bg:'bg-rose-50 dark:bg-rose-500/10',       text:'text-rose-700 dark:text-rose-400',       dot:'bg-rose-500' },
+  { bg:'bg-cyan-50 dark:bg-cyan-500/10',       text:'text-cyan-700 dark:text-cyan-400',       dot:'bg-cyan-500' },
+  { bg:'bg-fuchsia-50 dark:bg-fuchsia-500/10', text:'text-fuchsia-700 dark:text-fuchsia-400', dot:'bg-fuchsia-500' },
+  { bg:'bg-lime-50 dark:bg-lime-500/10',       text:'text-lime-700 dark:text-lime-400',       dot:'bg-lime-600' },
 ];
 function colorForSubject(code) {
   let h = 0;
@@ -196,35 +194,44 @@ function colorForSubject(code) {
   return SUBJECT_PALETTE[h % SUBJECT_PALETTE.length];
 }
 
-function dueBadge(dueDateStr) {
-  const due = new Date(dueDateStr);
-  const now = new Date();
-  const msPerDay = 86400000;
-  const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const diffDays = Math.round((dueDay - today) / msPerDay);
-
-  if (due < now) return { label: 'เลยกำหนดส่ง', cls: 'bg-red-50 text-red-700 ring-1 ring-red-200', icon:'alert-circle' };
-  if (diffDays === 0) return { label: 'ส่งวันนี้', cls: 'bg-red-50 text-red-700 ring-1 ring-red-200', icon:'alarm-clock' };
-  if (diffDays === 1) return { label: 'ส่งพรุ่งนี้', cls: 'bg-orange-50 text-orange-700 ring-1 ring-orange-200', icon:'alarm-clock' };
-  if (diffDays <= 3) return { label: `เหลือ ${diffDays} วัน`, cls: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200', icon:'clock' };
-  return { label: `เหลือ ${diffDays} วัน`, cls: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200', icon:'calendar' };
+// ----- Thai timezone (Asia/Bangkok) date/time formatting -----
+function bangkokYMD(date) {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);
+  const o = {};
+  parts.forEach(p => { o[p.type] = p.value; });
+  return Date.UTC(Number(o.year), Number(o.month) - 1, Number(o.day));
 }
 
 function fmtDateTime(dateStr) {
   const d = new Date(dateStr);
-  const days = ['อา','จ','อ','พ','พฤ','ศ','ส'];
-  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-  const hh = String(d.getHours()).padStart(2,'0');
-  const mm = String(d.getMinutes()).padStart(2,'0');
-  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} · ${hh}:${mm} น.`;
+  const dateFmt = new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', weekday: 'short', day: 'numeric', month: 'short' });
+  const timeFmt = new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  return `${dateFmt.format(d)} · ${timeFmt.format(d)} น.`;
+}
+
+// Four-tier countdown status computed against current Thai (Asia/Bangkok) time.
+function dueBadge(dueDateStr) {
+  const due = new Date(dueDateStr);
+  const now = new Date();
+  const diffDays = Math.round((bangkokYMD(due) - bangkokYMD(now)) / 86400000);
+
+  if (due.getTime() < now.getTime()) {
+    return { label: 'เลยกำหนดส่ง', cls: 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20', icon: 'alert-circle' };
+  }
+  if (diffDays <= 0) {
+    return { label: 'ส่งวันนี้', cls: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20', icon: 'alarm-clock' };
+  }
+  if (diffDays === 1) {
+    return { label: 'ส่งพรุ่งนี้', cls: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20', icon: 'clock' };
+  }
+  return { label: `เหลืออีก ${diffDays} วัน`, cls: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20', icon: 'calendar' };
 }
 
 function toast(msg, type='default') {
   const root = document.getElementById('toast-root');
   const el = document.createElement('div');
   const styles = {
-    default: 'bg-ink-800 text-white',
+    default: 'bg-slate-800 dark:bg-slate-700 text-white',
     success: 'bg-emerald-600 text-white',
     error: 'bg-red-600 text-white',
   };
@@ -238,12 +245,12 @@ function confirmDialog({ title, message, confirmLabel='ยืนยัน', dang
   return new Promise((resolve) => {
     const root = document.getElementById('modal-root');
     root.innerHTML = `
-      <div class="fixed inset-0 z-[300] bg-ink-900/40 flex items-end sm:items-center justify-center p-4" id="confirm-backdrop">
-        <div class="rise-in bg-white rounded-xl2 shadow-pop w-full max-w-sm p-5">
-          <h3 class="font-bold text-lg text-ink-900">${esc(title)}</h3>
-          <p class="text-ink-500 text-sm mt-1.5 leading-relaxed">${esc(message)}</p>
+      <div class="fixed inset-0 z-[300] bg-slate-900/40 dark:bg-black/60 flex items-end sm:items-center justify-center p-4" id="confirm-backdrop">
+        <div class="rise-in bg-white dark:bg-slate-900 rounded-xl2 shadow-pop w-full max-w-sm p-5 border border-slate-200 dark:border-slate-800">
+          <h3 class="font-bold text-lg text-slate-900 dark:text-white">${esc(title)}</h3>
+          <p class="text-slate-500 dark:text-slate-400 text-sm mt-1.5 leading-relaxed">${esc(message)}</p>
           <div class="flex gap-2 mt-5">
-            <button id="confirm-cancel" class="flex-1 py-2.5 rounded-xl bg-ink-100 text-ink-700 font-semibold text-sm">ยกเลิก</button>
+            <button id="confirm-cancel" class="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-sm">ยกเลิก</button>
             <button id="confirm-ok" class="flex-1 py-2.5 rounded-xl ${danger?'bg-red-600':'bg-brand-600'} text-white font-semibold text-sm">${esc(confirmLabel)}</button>
           </div>
         </div>
@@ -254,39 +261,66 @@ function confirmDialog({ title, message, confirmLabel='ยืนยัน', dang
   });
 }
 
-// Client-side image compression: draws to canvas, resizes to max dimension,
-// re-encodes as JPEG at reduced quality. Returns a Blob.
-function compressImage(file, { maxDim = 1600, quality = 0.75 } = {}) {
+// ----- Client-side image compression --------------------------------------
+// Draws the source image onto a canvas, resizes to a max dimension, and
+// re-encodes as JPEG. Iteratively lowers quality (and, if still too large,
+// dimensions) until the blob is under the target byte size.
+function loadImageFromFile(file) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const reader = new FileReader();
     reader.onload = (e) => { img.src = e.target.result; };
     reader.onerror = reject;
-    img.onload = () => {
-      let { width, height } = img;
-      if (width > maxDim || height > maxDim) {
-        const scale = maxDim / Math.max(width, height);
-        width = Math.round(width * scale);
-        height = Math.round(height * scale);
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width; canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
-      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('compress failed')), 'image/jpeg', quality);
-    };
+    img.onload = () => resolve(img);
     img.onerror = reject;
     reader.readAsDataURL(file);
   });
 }
-
-function fileToBase64(file) {
+function canvasToBlob(canvas, quality) {
   return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result.split(',')[1]);
-    r.onerror = reject;
-    r.readAsDataURL(file);
+    canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('compress failed')), 'image/jpeg', quality);
   });
+}
+async function compressImage(file, { maxDim = 1200, quality = 0.75, maxBytes = 250 * 1024 } = {}) {
+  const img = await loadImageFromFile(file);
+  let dim = maxDim;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    let { width, height } = img;
+    if (width > dim || height > dim) {
+      const scale = dim / Math.max(width, height);
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, width, height);
+
+    let q = quality;
+    let blob = await canvasToBlob(canvas, q);
+    while (blob.size > maxBytes && q > 0.4) {
+      q -= 0.1;
+      blob = await canvasToBlob(canvas, q);
+    }
+    if (blob.size <= maxBytes || dim <= 500) return blob;
+    dim = Math.round(dim * 0.75); // still too big — shrink dimensions and retry
+  }
+  // Fall through: return whatever the last attempt produced.
+  const canvas = document.createElement('canvas');
+  canvas.width = img.width; canvas.height = img.height;
+  canvas.getContext('2d').drawImage(img, 0, 0);
+  return canvasToBlob(canvas, 0.6);
+}
+
+async function uploadImage(file, folder, opts) {
+  const sb = await ensureSupabase();
+  if (!sb) throw new Error('no supabase client');
+  const blob = await compressImage(file, opts);
+  const path = `${state.classroom.id}/${folder}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
+  const { error: upErr } = await sb.storage.from(STORAGE_BUCKET).upload(path, blob, { contentType: 'image/jpeg', upsert: true });
+  if (upErr) throw upErr;
+  const { data: pub } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+  return pub.publicUrl;
 }
 
 function icon(name, cls='w-4 h-4') {
@@ -294,11 +328,11 @@ function icon(name, cls='w-4 h-4') {
 }
 function renderIcons() { if (window.lucide) lucide.createIcons(); }
 
-// ---------- DATA LOADING ----------------------------------------------------------
+// ---------- DATA LOADING ----------------------------------------------------
 async function loadClassroomData() {
   if (!state.classroom) return;
   const sb = await ensureSupabase();
-  if (!sb) return;
+  if (!sb) { state.view = 'picker'; render(); return; }
   state.loading = true; render();
   try {
     const [{ data: subs, error: subErr }, { data: asns, error: asnErr }] = await Promise.all([
@@ -317,63 +351,40 @@ async function loadClassroomData() {
   }
 }
 
-// ---------- VIEWS ----------------------------------------------------------
-
-function ViewSettings() {
-  const cfg = getConfig() || { url:'', key:'' };
-  return `
-  <div class="p-5 fade-in">
-    <div class="flex items-center gap-2 mb-1">
-      <div class="w-9 h-9 rounded-xl bg-brand-600 text-white grid place-items-center">${icon('book-open-check','w-5 h-5')}</div>
-      <h1 class="text-lg font-extrabold text-ink-900">ห้องนี้มีการบ้าน</h1>
-    </div>
-    <p class="text-ink-500 text-sm mb-6">ตั้งค่าการเชื่อมต่อ Supabase ก่อนเริ่มใช้งาน (ทำครั้งเดียว)</p>
-
-    <div class="bg-white rounded-xl2 shadow-card p-4 space-y-4">
-      <div>
-        <label class="text-xs font-semibold text-ink-500 mb-1 block">Supabase Project URL</label>
-        <input id="cfg-url" type="text" value="${esc(cfg.url)}" placeholder="https://xxxx.supabase.co"
-          class="w-full px-3.5 py-2.5 rounded-xl border border-ink-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none text-sm num">
-      </div>
-      <div>
-        <label class="text-xs font-semibold text-ink-500 mb-1 block">Supabase anon public key</label>
-        <textarea id="cfg-key" rows="3" placeholder="eyJhbGciOi..."
-          class="w-full px-3.5 py-2.5 rounded-xl border border-ink-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none text-sm num resize-none">${esc(cfg.key)}</textarea>
-      </div>
-      <button id="save-config" class="w-full py-3 rounded-xl bg-brand-600 text-white font-bold text-sm active:scale-[0.98] transition">บันทึกและเริ่มใช้งาน</button>
-    </div>
-
-    <div class="mt-4 text-xs text-ink-400 leading-relaxed px-1">
-      หาได้ที่ Supabase Dashboard → Project Settings → API<br>
-      ต้องรัน setup-supabase.sql ในโปรเจกต์ก่อนใช้งานครั้งแรก
-    </div>
-  </div>`;
+// ---------- SHARED CHROME ----------------------------------------------------
+function themeToggleBtn() {
+  return `<button id="theme-toggle" class="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 shadow-card border border-slate-200 dark:border-slate-800 grid place-items-center text-slate-500 dark:text-slate-300 shrink-0">
+    ${isDarkMode() ? icon('sun','w-4 h-4') : icon('moon','w-4 h-4')}
+  </button>`;
 }
+
+// ---------- VIEWS ----------------------------------------------------------
 
 function ViewPicker() {
   const grades = [1,2,3,4,5,6];
+  const rooms = Array.from({length:20},(_,i)=>i+1);
   return `
   <div class="p-5 fade-in">
     <div class="flex items-center justify-between mb-1">
       <div class="flex items-center gap-2">
         <div class="w-9 h-9 rounded-xl bg-brand-600 text-white grid place-items-center">${icon('book-open-check','w-5 h-5')}</div>
-        <h1 class="text-lg font-extrabold text-ink-900">ห้องนี้มีการบ้าน</h1>
+        <h1 class="text-lg font-extrabold text-slate-900 dark:text-white">ห้องนี้มีการบ้าน</h1>
       </div>
-      <button id="open-settings" class="w-9 h-9 rounded-xl bg-white shadow-card grid place-items-center text-ink-500">${icon('settings','w-4 h-4')}</button>
+      ${themeToggleBtn()}
     </div>
-    <p class="text-ink-500 text-sm mb-6">เลือกห้องเรียนของคุณเพื่อดูการบ้าน</p>
+    <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">เลือกห้องเรียนของคุณเพื่อดูการบ้าน</p>
 
-    <div class="bg-white rounded-xl2 shadow-card p-4 space-y-4">
+    <div class="bg-white dark:bg-slate-900 rounded-xl2 shadow-card border border-slate-200 dark:border-slate-800 p-4 space-y-4">
       <div>
-        <label class="text-xs font-semibold text-ink-500 mb-2 block">ระดับชั้น</label>
+        <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 block">ระดับชั้น</label>
         <div class="grid grid-cols-6 gap-2" id="grade-grid">
-          ${grades.map(g => `<button data-grade="${g}" class="grade-btn py-2.5 rounded-xl border border-ink-200 text-sm font-bold text-ink-700 data-[active=true]:bg-brand-600 data-[active=true]:text-white data-[active=true]:border-brand-600">ม.${g}</button>`).join('')}
+          ${grades.map(g => `<button data-grade="${g}" class="grade-btn py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-700 dark:text-slate-200 data-[active=true]:bg-brand-600 data-[active=true]:text-white data-[active=true]:border-brand-600">ม.${g}</button>`).join('')}
         </div>
       </div>
       <div>
-        <label class="text-xs font-semibold text-ink-500 mb-2 block">ห้อง</label>
-        <div class="grid grid-cols-6 gap-2" id="room-grid">
-          ${Array.from({length:12},(_,i)=>i+1).map(r => `<button data-room="${r}" class="room-btn py-2.5 rounded-xl border border-ink-200 text-sm font-bold text-ink-700 data-[active=true]:bg-brand-600 data-[active=true]:text-white data-[active=true]:border-brand-600">${r}</button>`).join('')}
+        <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 block">ห้อง</label>
+        <div class="grid grid-cols-5 gap-2" id="room-grid">
+          ${rooms.map(r => `<button data-room="${r}" class="room-btn py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-700 dark:text-slate-200 data-[active=true]:bg-brand-600 data-[active=true]:text-white data-[active=true]:border-brand-600">${r}</button>`).join('')}
         </div>
       </div>
       <button id="confirm-picker" class="w-full py-3 rounded-xl bg-brand-600 text-white font-bold text-sm disabled:opacity-40" disabled>เข้าห้องเรียน</button>
@@ -390,7 +401,7 @@ function ViewDashboard() {
     if (state.search) {
       const q = state.search.toLowerCase();
       const subj = state.subjects.find(s => s.id === a.subject_id);
-      const hay = `${a.title} ${a.description||''} ${subj?.subject_name||''} ${subj?.subject_code||''}`.toLowerCase();
+      const hay = `${a.title} ${a.description||''} ${subj?.subject_name||''} ${subj?.subject_code||''} ${subj?.teacher_name||''}`.toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -400,52 +411,52 @@ function ViewDashboard() {
 
   return `
   <div class="fade-in">
-    <div class="sticky top-0 z-30 bg-ink-50/90 backdrop-blur px-5 pt-5 pb-3">
+    <div class="sticky top-0 z-30 bg-slate-100/90 dark:bg-slate-950/90 backdrop-blur px-5 pt-5 pb-3">
       <div class="flex items-center justify-between">
         <div>
-          <div class="text-xs text-ink-400 font-medium">ห้องเรียน</div>
-          <div class="text-lg font-extrabold text-ink-900 flex items-center gap-1.5">
+          <div class="text-xs text-slate-400 dark:text-slate-500 font-medium">ห้องเรียน</div>
+          <div class="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
             ${GRADE_TH[c.grade_level]}/${c.room_number}
-            <button id="switch-room" class="text-xs text-brand-600 font-semibold underline underline-offset-2">เปลี่ยนห้อง</button>
+            <button id="switch-room" class="text-xs text-brand-600 dark:text-brand-400 font-semibold underline underline-offset-2">เปลี่ยนห้อง</button>
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <button id="open-settings" class="w-9 h-9 rounded-xl bg-white shadow-card grid place-items-center text-ink-500">${icon('settings','w-4 h-4')}</button>
-          <button id="rep-mode-btn" class="h-9 px-3 rounded-xl ${state.repMode?'bg-brand-600 text-white':'bg-white text-ink-700 shadow-card'} flex items-center gap-1.5 text-xs font-bold">
+          ${themeToggleBtn()}
+          <button id="rep-mode-btn" class="h-9 px-3 rounded-xl ${state.repMode?'bg-brand-600 text-white':'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 shadow-card border border-slate-200 dark:border-slate-800'} flex items-center gap-1.5 text-xs font-bold shrink-0">
             ${icon('key-round','w-3.5 h-3.5')} ${state.repMode ? 'โหมดตัวแทนห้อง' : 'ตัวแทนห้อง'}
           </button>
         </div>
       </div>
 
       <div class="mt-3 relative">
-        ${icon('search', 'w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2')}
+        ${icon('search', 'w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2')}
         <input id="search-input" type="text" value="${esc(state.search)}" placeholder="ค้นหาการบ้าน วิชา หรือคำสั่งงาน..."
-          class="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white shadow-card text-sm outline-none focus:ring-2 focus:ring-brand-100">
+          class="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 shadow-card border border-slate-200 dark:border-slate-800 text-sm outline-none focus:ring-2 focus:ring-brand-100 dark:focus:ring-brand-900">
       </div>
 
       <div class="mt-3 flex gap-1.5 overflow-x-auto no-scrollbar">
         ${[['all','ทั้งหมด'],['pending',`ยังไม่เสร็จ${pendingCount?` (${pendingCount})`:''}`],['done','เสร็จแล้ว']].map(([k,l]) => `
-          <button data-tab="${k}" class="tab-btn shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold border ${state.filter===k?'bg-brand-600 text-white border-brand-600':'bg-white text-ink-600 border-ink-200'}">${l}</button>
+          <button data-tab="${k}" class="tab-btn shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold border ${state.filter===k?'bg-brand-600 text-white border-brand-600':'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800'}">${l}</button>
         `).join('')}
       </div>
 
       ${state.subjects.length ? `
       <div class="mt-2 flex gap-1.5 overflow-x-auto no-scrollbar">
-        <button data-subj="all" class="subj-filter-btn shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold border ${state.subjectFilter==='all'?'bg-ink-800 text-white border-ink-800':'bg-white text-ink-500 border-ink-200'}">ทุกวิชา</button>
+        <button data-subj="all" class="subj-filter-btn shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold border ${state.subjectFilter==='all'?'bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-800 dark:border-slate-100':'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800'}">ทุกวิชา</button>
         ${state.subjects.map(s => {
           const col = colorForSubject(s.subject_code);
           const active = state.subjectFilter === s.id;
-          return `<button data-subj="${s.id}" class="subj-filter-btn shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold border ${active?'bg-ink-800 text-white border-ink-800':`${col.bg} ${col.text} border-transparent`}">${esc(s.subject_code)}</button>`;
+          return `<button data-subj="${s.id}" class="subj-filter-btn shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold border ${active?'bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-800 dark:border-slate-100':`${col.bg} ${col.text} border-transparent`}">${esc(s.subject_code)}</button>`;
         }).join('')}
       </div>` : ''}
     </div>
 
     <div class="px-5 pt-2 space-y-3">
       ${state.repMode ? `
-      <button id="add-assignment-btn" class="w-full py-3 rounded-xl border-2 border-dashed border-brand-300 text-brand-600 font-bold text-sm flex items-center justify-center gap-1.5 bg-brand-50/50">
+      <button id="add-assignment-btn" class="w-full py-3 rounded-xl border-2 border-dashed border-brand-300 dark:border-brand-700 text-brand-600 dark:text-brand-400 font-bold text-sm flex items-center justify-center gap-1.5 bg-brand-50/50 dark:bg-brand-500/10">
         ${icon('plus','w-4 h-4')} เพิ่มการบ้านใหม่
       </button>
-      <button id="manage-subjects-btn" class="w-full py-2.5 rounded-xl bg-white shadow-card text-ink-700 font-semibold text-sm flex items-center justify-center gap-1.5">
+      <button id="manage-subjects-btn" class="w-full py-2.5 rounded-xl bg-white dark:bg-slate-900 shadow-card border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-sm flex items-center justify-center gap-1.5">
         ${icon('layout-list','w-4 h-4')} จัดการรายวิชา (${state.subjects.length})
       </button>` : ''}
 
@@ -456,7 +467,7 @@ function ViewDashboard() {
 
 function renderSkeletons() {
   return Array.from({length:3}).map(()=>`
-    <div class="bg-white rounded-xl2 shadow-card p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-xl2 shadow-card border border-slate-200 dark:border-slate-800 p-4">
       <div class="skeleton h-4 w-24 rounded-full mb-3"></div>
       <div class="skeleton h-5 w-3/4 rounded mb-2"></div>
       <div class="skeleton h-4 w-full rounded mb-1"></div>
@@ -473,79 +484,96 @@ function renderEmpty() {
   const [ic, title, sub] = msgs[state.filter] || msgs.all;
   return `
     <div class="text-center py-14 px-6">
-      <div class="w-14 h-14 rounded-2xl bg-white shadow-card mx-auto grid place-items-center text-brand-500 mb-3">${icon(ic,'w-7 h-7')}</div>
-      <div class="font-bold text-ink-800">${title}</div>
-      <div class="text-ink-400 text-sm mt-1">${sub}</div>
+      <div class="w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 shadow-card border border-slate-200 dark:border-slate-800 mx-auto grid place-items-center text-brand-500 mb-3">${icon(ic,'w-7 h-7')}</div>
+      <div class="font-bold text-slate-800 dark:text-slate-100">${title}</div>
+      <div class="text-slate-400 dark:text-slate-500 text-sm mt-1">${sub}</div>
     </div>`;
+}
+
+function subjectAvatar(subj, col) {
+  if (subj && subj.subject_icon_url) {
+    return `<button data-preview="${esc(subj.subject_icon_url)}" class="w-8 h-8 rounded-lg overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-800"><img src="${esc(subj.subject_icon_url)}" class="w-full h-full object-cover" loading="lazy"></button>`;
+  }
+  return `<div class="w-8 h-8 rounded-lg shrink-0 grid place-items-center font-bold text-[11px] ${col.bg} ${col.text}">${esc((subj?.subject_code||'?').slice(0,2))}</div>`;
 }
 
 function renderCard(a) {
   const subj = state.subjects.find(s => s.id === a.subject_id);
-  const col = subj ? colorForSubject(subj.subject_code) : { bg:'bg-ink-100', text:'text-ink-600' };
+  const col = subj ? colorForSubject(subj.subject_code) : { bg:'bg-slate-100 dark:bg-slate-800', text:'text-slate-600 dark:text-slate-300' };
   const badge = dueBadge(a.due_date);
   const done = state.doneIds.has(a.id);
   return `
-  <div class="bg-white rounded-xl2 shadow-card p-4 ${done ? 'opacity-60' : ''}" data-card="${a.id}">
+  <div class="bg-white dark:bg-slate-900 rounded-xl2 shadow-card border border-slate-200 dark:border-slate-800 p-4 ${done ? 'opacity-60' : ''}" data-card="${a.id}">
     <div class="flex items-start justify-between gap-2">
-      <div class="flex flex-wrap items-center gap-1.5 mb-2">
-        <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${col.bg} ${col.text}">${esc(subj?.subject_code || 'ไม่ระบุวิชา')}</span>
-        ${subj?.subject_name ? `<span class="text-[11px] text-ink-400 font-medium">${esc(subj.subject_name)}</span>` : ''}
-        <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${a.task_type==='GROUP' ? 'bg-fuchsia-50 text-fuchsia-700' : 'bg-ink-100 text-ink-600'}">${a.task_type==='GROUP' ? 'งานกลุ่ม' : 'งานเดี่ยว'}</span>
+      <div class="flex items-center gap-2 mb-2 min-w-0">
+        ${subjectAvatar(subj, col)}
+        <div class="flex flex-wrap items-center gap-1.5 min-w-0">
+          <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${col.bg} ${col.text}">${esc(subj?.subject_code || 'ไม่ระบุวิชา')}</span>
+          ${subj?.subject_name ? `<span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium truncate">${esc(subj.subject_name)}</span>` : ''}
+          <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${a.task_type==='GROUP' ? 'bg-fuchsia-50 dark:bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}">${a.task_type==='GROUP' ? 'งานกลุ่ม' : 'งานเดี่ยว'}</span>
+        </div>
       </div>
       ${state.repMode ? `
       <div class="flex gap-1 shrink-0">
-        <button data-edit="${a.id}" class="w-7 h-7 rounded-lg bg-ink-50 grid place-items-center text-ink-500">${icon('pencil','w-3.5 h-3.5')}</button>
-        <button data-delete="${a.id}" class="w-7 h-7 rounded-lg bg-red-50 grid place-items-center text-red-500">${icon('trash-2','w-3.5 h-3.5')}</button>
+        <button data-edit="${a.id}" class="w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-800 grid place-items-center text-slate-500 dark:text-slate-300">${icon('pencil','w-3.5 h-3.5')}</button>
+        <button data-delete="${a.id}" class="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-500/10 grid place-items-center text-red-500 dark:text-red-400">${icon('trash-2','w-3.5 h-3.5')}</button>
       </div>` : ''}
     </div>
 
     <div class="flex gap-3">
       <div class="flex-1 min-w-0">
-        <h3 class="font-bold text-ink-900 leading-snug ${done?'line-through decoration-2':''}">${esc(a.title)}</h3>
-        ${a.description ? `<p class="text-sm text-ink-500 mt-1 line-clamp-2">${esc(a.description)}</p>` : ''}
-        ${subj?.teacher_name ? `<div class="text-xs text-ink-400 mt-1.5 flex items-center gap-1">${icon('user-round','w-3 h-3')} ${esc(subj.teacher_name)}</div>` : ''}
+        <h3 class="font-bold text-slate-900 dark:text-white leading-snug ${done?'line-through decoration-2':''}">${esc(a.title)}</h3>
+        ${a.description ? `<p class="text-sm text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">${esc(a.description)}</p>` : ''}
+        ${subj?.teacher_name ? `<div class="text-xs text-slate-400 dark:text-slate-500 mt-1.5 flex items-center gap-1">
+          ${subj.teacher_image_url ? `<img src="${esc(subj.teacher_image_url)}" class="w-4 h-4 rounded-full object-cover">` : icon('user-round','w-3 h-3')}
+          ${esc(subj.teacher_name)}
+        </div>` : ''}
       </div>
       ${a.image_url ? `
-      <button data-preview="${esc(a.image_url)}" class="relative shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-ink-100">
+      <button data-preview="${esc(a.image_url)}" class="relative shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800">
         <img src="${esc(a.image_url)}" class="w-full h-full object-cover" loading="lazy">
         <span class="absolute bottom-1 right-1 bg-black/50 rounded-md p-0.5">${icon('zoom-in','w-3 h-3 text-white')}</span>
       </button>` : ''}
     </div>
 
-    <div class="flex items-center justify-between mt-3 pt-3 border-t border-ink-100">
+    <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
       <div class="flex items-center gap-1.5 text-xs">
         <span class="px-2 py-1 rounded-lg font-semibold flex items-center gap-1 ${badge.cls}">${icon(badge.icon,'w-3 h-3')} ${badge.label}</span>
-        <span class="text-ink-400 num">${fmtDateTime(a.due_date)}</span>
+        <span class="text-slate-400 dark:text-slate-500 num">${fmtDateTime(a.due_date)}</span>
       </div>
-      <button data-toggle-done="${a.id}" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold ${done ? 'bg-emerald-50 text-emerald-700' : 'bg-ink-50 text-ink-500'}">
+      <button data-toggle-done="${a.id}" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold ${done ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-300'}">
         ${icon(done?'check-circle-2':'circle', 'w-4 h-4')} ${done ? 'เสร็จแล้ว' : 'ทำเสร็จ'}
       </button>
     </div>
   </div>`;
 }
 
-// ---------- REP GATE / SUBJECT MANAGER / OCR / ASSIGNMENT FORM (modals) ----------
+// ---------- REP GATE / SUBJECT MANAGER / ASSIGNMENT FORM (modals) ----------
 
 function modalShell(inner, { wide=false } = {}) {
   return `
-  <div class="fixed inset-0 z-[250] bg-ink-900/40 flex items-end sm:items-center justify-center" id="modal-backdrop">
-    <div class="rise-in bg-white w-full ${wide?'sm:max-w-lg':'sm:max-w-md'} sm:rounded-xl2 rounded-t-xl2 max-h-[92vh] overflow-y-auto">
+  <div class="fixed inset-0 z-[250] bg-slate-900/40 dark:bg-black/60 flex items-end sm:items-center justify-center" id="modal-backdrop">
+    <div class="rise-in bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-800 w-full ${wide?'sm:max-w-lg':'sm:max-w-md'} sm:rounded-xl2 rounded-t-xl2 max-h-[92vh] overflow-y-auto">
       ${inner}
     </div>
   </div>`;
 }
 
+const inputCls = 'w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:focus:ring-brand-900 outline-none text-sm';
+const labelCls = 'text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1 block';
+const closeBtnCls = 'w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 grid place-items-center';
+
 function renderRepGate() {
   document.getElementById('modal-root').innerHTML = modalShell(`
     <div class="p-5">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="font-extrabold text-lg text-ink-900 flex items-center gap-2">${icon('key-round','w-5 h-5 text-brand-600')} เข้าสู่โหมดตัวแทนห้อง</h3>
-        <button id="modal-close" class="w-8 h-8 rounded-lg bg-ink-50 grid place-items-center">${icon('x','w-4 h-4')}</button>
+        <h3 class="font-extrabold text-lg text-slate-900 dark:text-white flex items-center gap-2">${icon('key-round','w-5 h-5 text-brand-600 dark:text-brand-400')} เข้าสู่โหมดตัวแทนห้อง</h3>
+        <button id="modal-close" class="${closeBtnCls}">${icon('x','w-4 h-4')}</button>
       </div>
-      <p class="text-sm text-ink-500 mb-4">กรอกรหัสผ่านของห้อง ${GRADE_TH[state.classroom.grade_level]}/${state.classroom.room_number} เพื่อจัดการวิชาและการบ้าน</p>
-      <input id="passcode-input" type="password" inputmode="numeric" placeholder="รหัสผ่านห้อง" autofocus
-        class="w-full px-3.5 py-3 rounded-xl border border-ink-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none text-center tracking-widest font-bold num text-lg">
-      <div id="passcode-error" class="text-red-500 text-xs text-center mt-2 hidden">รหัสผ่านไม่ถูกต้อง</div>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">กรอกรหัสผ่านของห้อง ${GRADE_TH[state.classroom.grade_level]}/${state.classroom.room_number} เพื่อจัดการวิชาและการบ้าน</p>
+      <input id="passcode-input" type="password" inputmode="numeric" maxlength="10" placeholder="รหัสผ่านห้อง" autofocus
+        class="${inputCls} text-center tracking-widest font-bold num text-lg py-3">
+      <div id="passcode-error" class="text-red-500 dark:text-red-400 text-xs text-center mt-2 hidden">รหัสผ่านไม่ถูกต้อง</div>
       <button id="passcode-submit" class="w-full mt-4 py-3 rounded-xl bg-brand-600 text-white font-bold text-sm">ปลดล็อก</button>
     </div>
   `);
@@ -592,30 +620,30 @@ function renderSubjectManager() {
   document.getElementById('modal-root').innerHTML = modalShell(`
     <div class="p-5">
       <div class="flex items-center justify-between mb-1">
-        <h3 class="font-extrabold text-lg text-ink-900">จัดการรายวิชา</h3>
-        <button id="modal-close" class="w-8 h-8 rounded-lg bg-ink-50 grid place-items-center">${icon('x','w-4 h-4')}</button>
+        <h3 class="font-extrabold text-lg text-slate-900 dark:text-white">จัดการรายวิชา</h3>
+        <button id="modal-close" class="${closeBtnCls}">${icon('x','w-4 h-4')}</button>
       </div>
-      <p class="text-sm text-ink-500 mb-4">เพิ่มด้วยตนเอง หรือสแกนตารางเรียนด้วย AI</p>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">เพิ่ม แก้ไข หรือลบรายวิชาในห้องนี้</p>
 
-      <div class="flex gap-2 mb-4">
-        <button id="scan-timetable-btn" class="flex-1 py-2.5 rounded-xl bg-brand-50 text-brand-700 font-bold text-sm flex items-center justify-center gap-1.5">${icon('scan-line','w-4 h-4')} สแกนตารางเรียน</button>
-        <button id="add-subject-btn" class="flex-1 py-2.5 rounded-xl bg-ink-50 text-ink-700 font-bold text-sm flex items-center justify-center gap-1.5">${icon('plus','w-4 h-4')} เพิ่มวิชา</button>
-      </div>
+      <button id="add-subject-btn" class="w-full mb-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-sm flex items-center justify-center gap-1.5">${icon('plus','w-4 h-4')} เพิ่มวิชา</button>
 
       <div id="subject-list" class="space-y-2">
         ${state.subjects.length ? state.subjects.map(s => {
           const col = colorForSubject(s.subject_code);
           return `
-          <div class="flex items-center gap-2 p-2.5 rounded-xl border border-ink-100">
-            <span class="px-2 py-1 rounded-lg text-xs font-bold shrink-0 ${col.bg} ${col.text}">${esc(s.subject_code)}</span>
+          <div class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
+            ${subjectAvatar(s, col)}
             <div class="flex-1 min-w-0">
-              <div class="text-sm font-semibold text-ink-800 truncate">${esc(s.subject_name || '-')}</div>
-              <div class="text-xs text-ink-400 truncate">${esc(s.teacher_name || 'ไม่ระบุครูผู้สอน')}</div>
+              <div class="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">${esc(s.subject_name || s.subject_code || '-')}</div>
+              <div class="text-xs text-slate-400 dark:text-slate-500 truncate flex items-center gap-1">
+                ${s.teacher_image_url ? `<img src="${esc(s.teacher_image_url)}" class="w-3.5 h-3.5 rounded-full object-cover">` : ''}
+                ${esc(s.teacher_name || 'ไม่ระบุครูผู้สอน')}
+              </div>
             </div>
-            <button data-edit-subject="${s.id}" class="w-7 h-7 rounded-lg bg-ink-50 grid place-items-center text-ink-500 shrink-0">${icon('pencil','w-3.5 h-3.5')}</button>
-            <button data-delete-subject="${s.id}" class="w-7 h-7 rounded-lg bg-red-50 grid place-items-center text-red-500 shrink-0">${icon('trash-2','w-3.5 h-3.5')}</button>
+            <button data-edit-subject="${s.id}" class="w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-800 grid place-items-center text-slate-500 dark:text-slate-300 shrink-0">${icon('pencil','w-3.5 h-3.5')}</button>
+            <button data-delete-subject="${s.id}" class="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-500/10 grid place-items-center text-red-500 dark:text-red-400 shrink-0">${icon('trash-2','w-3.5 h-3.5')}</button>
           </div>`;
-        }).join('') : `<div class="text-center text-sm text-ink-400 py-8">ยังไม่มีรายวิชา</div>`}
+        }).join('') : `<div class="text-center text-sm text-slate-400 dark:text-slate-500 py-8">ยังไม่มีรายวิชา</div>`}
       </div>
     </div>
   `, { wide:true });
@@ -623,7 +651,7 @@ function renderSubjectManager() {
   document.getElementById('modal-close').onclick = closeModal;
   document.getElementById('modal-backdrop').addEventListener('click', e => { if (e.target.id==='modal-backdrop') closeModal(); });
   document.getElementById('add-subject-btn').onclick = () => { state.editingSubject = null; renderSubjectForm(); };
-  document.getElementById('scan-timetable-btn').onclick = renderOcrScanner;
+  document.querySelectorAll('[data-preview]').forEach(b => b.onclick = () => renderImagePreviewModal(b.dataset.preview));
   document.querySelectorAll('[data-edit-subject]').forEach(b => b.onclick = () => {
     state.editingSubject = state.subjects.find(s => s.id === b.dataset.editSubject);
     renderSubjectForm();
@@ -649,50 +677,96 @@ function renderSubjectManager() {
   });
 }
 
+function imageFieldPreview(url, id) {
+  return `<div id="${id}" class="mt-2">${url ? `<img src="${esc(url)}" class="w-16 h-16 object-cover rounded-xl border border-slate-200 dark:border-slate-700">` : ''}</div>`;
+}
+
 function renderSubjectForm() {
-  const s = state.editingSubject || { subject_code:'', subject_name:'', teacher_name:'' };
+  const s = state.editingSubject || { subject_code:'', subject_name:'', teacher_name:'', teacher_image_url:'', subject_icon_url:'' };
   document.getElementById('modal-root').innerHTML = modalShell(`
     <div class="p-5">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="font-extrabold text-lg text-ink-900">${state.editingSubject ? 'แก้ไขรายวิชา' : 'เพิ่มรายวิชา'}</h3>
-        <button id="modal-close" class="w-8 h-8 rounded-lg bg-ink-50 grid place-items-center">${icon('x','w-4 h-4')}</button>
+        <h3 class="font-extrabold text-lg text-slate-900 dark:text-white">${state.editingSubject ? 'แก้ไขรายวิชา' : 'เพิ่มรายวิชา'}</h3>
+        <button id="modal-close" class="${closeBtnCls}">${icon('x','w-4 h-4')}</button>
       </div>
       <div class="space-y-3">
         <div>
-          <label class="text-xs font-semibold text-ink-500 mb-1 block">รหัสวิชา</label>
-          <input id="f-code" value="${esc(s.subject_code)}" placeholder="ค32101" class="w-full px-3.5 py-2.5 rounded-xl border border-ink-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none text-sm">
+          <label class="${labelCls}">รหัสวิชา</label>
+          <input id="f-code" value="${esc(s.subject_code)}" placeholder="ค32101" class="${inputCls}">
         </div>
         <div>
-          <label class="text-xs font-semibold text-ink-500 mb-1 block">ชื่อวิชา</label>
-          <input id="f-name" value="${esc(s.subject_name)}" placeholder="คณิตศาสตร์พื้นฐาน" class="w-full px-3.5 py-2.5 rounded-xl border border-ink-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none text-sm">
+          <label class="${labelCls}">ชื่อวิชา</label>
+          <input id="f-name" value="${esc(s.subject_name)}" placeholder="คณิตศาสตร์พื้นฐาน" class="${inputCls}">
         </div>
         <div>
-          <label class="text-xs font-semibold text-ink-500 mb-1 block">ครูผู้สอน</label>
-          <input id="f-teacher" value="${esc(s.teacher_name)}" placeholder="ครูศิวาพร" class="w-full px-3.5 py-2.5 rounded-xl border border-ink-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none text-sm">
+          <label class="${labelCls}">ครูผู้สอน</label>
+          <input id="f-teacher" value="${esc(s.teacher_name)}" placeholder="ครูศิวาพร" class="${inputCls}">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="${labelCls}">รูปครูผู้สอน (ไม่บังคับ)</label>
+            <input id="f-teacher-image" type="file" accept="image/*" class="w-full text-xs text-slate-500 dark:text-slate-400">
+            ${imageFieldPreview(s.teacher_image_url, 'teacher-image-preview')}
+          </div>
+          <div>
+            <label class="${labelCls}">ไอคอนวิชา (ไม่บังคับ)</label>
+            <input id="f-subject-icon" type="file" accept="image/*" class="w-full text-xs text-slate-500 dark:text-slate-400">
+            ${imageFieldPreview(s.subject_icon_url, 'subject-icon-preview')}
+          </div>
         </div>
       </div>
-      <button id="save-subject" class="w-full mt-5 py-3 rounded-xl bg-brand-600 text-white font-bold text-sm">บันทึกรายวิชา</button>
+      <button id="save-subject" class="w-full mt-5 py-3 rounded-xl bg-brand-600 text-white font-bold text-sm flex items-center justify-center gap-2">
+        <span id="save-subject-label">บันทึกรายวิชา</span>
+      </button>
     </div>
   `);
   renderIcons();
   document.getElementById('modal-close').onclick = () => renderSubjectManager();
   document.getElementById('modal-backdrop').addEventListener('click', e => { if (e.target.id==='modal-backdrop') renderSubjectManager(); });
+
+  document.getElementById('f-teacher-image').onchange = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    document.getElementById('teacher-image-preview').innerHTML = `<img src="${URL.createObjectURL(f)}" class="w-16 h-16 object-cover rounded-xl border border-slate-200 dark:border-slate-700">`;
+  };
+  document.getElementById('f-subject-icon').onchange = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    document.getElementById('subject-icon-preview').innerHTML = `<img src="${URL.createObjectURL(f)}" class="w-16 h-16 object-cover rounded-xl border border-slate-200 dark:border-slate-700">`;
+  };
+
   const saveSubjectBtn = document.getElementById('save-subject');
+  const saveSubjectLabel = document.getElementById('save-subject-label');
   saveSubjectBtn.onclick = async () => {
     const code = document.getElementById('f-code').value.trim();
     const name = document.getElementById('f-name').value.trim();
     const teacher = document.getElementById('f-teacher').value.trim();
     if (!code) { toast('กรุณากรอกรหัสวิชา', 'error'); return; }
-    const originalLabel = saveSubjectBtn.textContent;
-    saveSubjectBtn.disabled = true; saveSubjectBtn.textContent = 'กำลังบันทึก...';
+    saveSubjectBtn.disabled = true; saveSubjectLabel.textContent = 'กำลังบันทึก...';
     try {
       const sb = await ensureSupabase();
       if (!sb) return;
+
+      let teacher_image_url = s.teacher_image_url || null;
+      const teacherFile = document.getElementById('f-teacher-image').files[0];
+      if (teacherFile) {
+        saveSubjectLabel.textContent = 'กำลังอัปโหลดรูป...';
+        teacher_image_url = await uploadImage(teacherFile, 'teachers', { maxDim: 500, quality: 0.8, maxBytes: 150*1024 });
+      }
+      let subject_icon_url = s.subject_icon_url || null;
+      const iconFile = document.getElementById('f-subject-icon').files[0];
+      if (iconFile) {
+        saveSubjectLabel.textContent = 'กำลังอัปโหลดไอคอน...';
+        subject_icon_url = await uploadImage(iconFile, 'subjects', { maxDim: 400, quality: 0.8, maxBytes: 120*1024 });
+      }
+
+      saveSubjectLabel.textContent = 'กำลังบันทึก...';
+      const payload = { subject_code: code, subject_name: name, teacher_name: teacher, teacher_image_url, subject_icon_url };
       let error;
       if (state.editingSubject) {
-        ({ error } = await sb.from('subjects').update({ subject_code: code, subject_name: name, teacher_name: teacher }).eq('id', state.editingSubject.id));
+        ({ error } = await sb.from('subjects').update(payload).eq('id', state.editingSubject.id));
       } else {
-        ({ error } = await sb.from('subjects').insert({ classroom_id: state.classroom.id, subject_code: code, subject_name: name, teacher_name: teacher }));
+        ({ error } = await sb.from('subjects').insert({ classroom_id: state.classroom.id, ...payload }));
       }
       if (error) { toast('บันทึกไม่สำเร็จ', 'error'); console.error(error); return; }
       toast('บันทึกรายวิชาแล้ว', 'success');
@@ -700,137 +774,9 @@ function renderSubjectForm() {
       renderSubjectManager();
     } catch (e) {
       console.error(e);
-      toast('เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง', 'error');
+      toast(e.message === 'no supabase client' ? 'เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง' : 'อัปโหลดรูปไม่สำเร็จ ลองใหม่อีกครั้ง', 'error');
     } finally {
-      if (saveSubjectBtn.isConnected) { saveSubjectBtn.disabled = false; saveSubjectBtn.textContent = originalLabel; }
-    }
-  };
-}
-
-// ----- OCR timetable scanner -----
-function renderOcrScanner() {
-  const key = localStorage.getItem(LS.geminiKey) || '';
-  document.getElementById('modal-root').innerHTML = modalShell(`
-    <div class="p-5">
-      <div class="flex items-center justify-between mb-1">
-        <h3 class="font-extrabold text-lg text-ink-900 flex items-center gap-2">${icon('scan-line','w-5 h-5 text-brand-600')} สแกนตารางเรียน</h3>
-        <button id="modal-close" class="w-8 h-8 rounded-lg bg-ink-50 grid place-items-center">${icon('x','w-4 h-4')}</button>
-      </div>
-      <p class="text-sm text-ink-500 mb-4">อัปโหลดรูปตารางเรียน ระบบจะแยกรหัสวิชา ชื่อวิชา และชื่อครูให้อัตโนมัติด้วย Gemini Vision</p>
-
-      <div class="mb-3">
-        <label class="text-xs font-semibold text-ink-500 mb-1 block">Gemini API Key <span class="font-normal text-ink-400">(เก็บไว้ในเครื่องนี้เท่านั้น)</span></label>
-        <input id="gemini-key" type="password" value="${esc(key)}" placeholder="AIza..." class="w-full px-3.5 py-2.5 rounded-xl border border-ink-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none text-sm num">
-      </div>
-
-      <div id="ocr-drop" class="border-2 border-dashed border-ink-200 rounded-xl2 p-6 text-center cursor-pointer">
-        <input id="ocr-file" type="file" accept="image/*" capture="environment" class="hidden">
-        <div id="ocr-drop-content">
-          ${icon('image-plus','w-8 h-8 text-ink-300 mx-auto mb-2')}
-          <div class="text-sm font-semibold text-ink-600">แตะเพื่อเลือกรูปตารางเรียน</div>
-          <div class="text-xs text-ink-400 mt-0.5">รองรับ JPG, PNG</div>
-        </div>
-      </div>
-
-      <div id="ocr-result" class="mt-4"></div>
-    </div>
-  `, { wide:true });
-  renderIcons();
-  document.getElementById('modal-close').onclick = closeModal;
-  document.getElementById('modal-backdrop').addEventListener('click', e => { if (e.target.id==='modal-backdrop') closeModal(); });
-
-  const fileInput = document.getElementById('ocr-file');
-  document.getElementById('ocr-drop').onclick = () => fileInput.click();
-  fileInput.onchange = async () => {
-    const file = fileInput.files[0];
-    if (!file) return;
-    const apiKey = document.getElementById('gemini-key').value.trim();
-    if (!apiKey) { toast('กรุณากรอก Gemini API Key ก่อน', 'error'); return; }
-    localStorage.setItem(LS.geminiKey, apiKey);
-
-    const resultEl = document.getElementById('ocr-result');
-    resultEl.innerHTML = `<div class="flex items-center gap-2 text-sm text-ink-500 py-4"><div class="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div> กำลังอ่านตารางเรียน...</div>`;
-
-    try {
-      const base64 = await fileToBase64(file);
-      const prompt = `You are reading a Thai school class timetable image. Extract every unique subject you can identify. Respond ONLY with a raw JSON array (no markdown fences, no commentary), where each item is: {"subject_code": string, "subject_name": string, "teacher_name": string}. If a field is unreadable, use an empty string. subject_code should look like a Thai school subject code (e.g. ค32101, ว32241) if visible, otherwise best guess or empty string.`;
-      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [
-            { text: prompt },
-            { inline_data: { mime_type: file.type || 'image/jpeg', data: base64 } },
-          ]}],
-        }),
-      });
-      const json = await resp.json();
-      if (json.error) throw new Error(json.error.message || 'Gemini API error');
-      let text = json.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '[]';
-      text = text.replace(/```json|```/g, '').trim();
-      let items;
-      try { items = JSON.parse(text); } catch(e) { throw new Error('อ่านผลลัพธ์ไม่สำเร็จ ลองรูปที่ชัดขึ้น'); }
-      if (!Array.isArray(items) || !items.length) throw new Error('ไม่พบข้อมูลวิชาในรูปนี้');
-      renderOcrPreview(items);
-    } catch (err) {
-      console.error(err);
-      resultEl.innerHTML = `<div class="text-sm text-red-600 bg-red-50 rounded-xl p-3">${esc(err.message || 'เกิดข้อผิดพลาดในการสแกน')}</div>`;
-    }
-  };
-}
-
-function renderOcrPreview(items) {
-  const resultEl = document.getElementById('ocr-result');
-  resultEl.innerHTML = `
-    <div class="text-xs font-semibold text-ink-500 mb-2">พบ ${items.length} รายวิชา — ตรวจสอบก่อนบันทึก</div>
-    <div class="space-y-2 max-h-64 overflow-y-auto">
-      ${items.map((it,i) => `
-        <div class="flex gap-1.5 items-center">
-          <input data-ocr-code="${i}" value="${esc(it.subject_code)}" placeholder="รหัสวิชา" class="w-24 shrink-0 px-2 py-2 rounded-lg border border-ink-200 text-xs">
-          <input data-ocr-name="${i}" value="${esc(it.subject_name)}" placeholder="ชื่อวิชา" class="flex-1 min-w-0 px-2 py-2 rounded-lg border border-ink-200 text-xs">
-          <input data-ocr-teacher="${i}" value="${esc(it.teacher_name)}" placeholder="ครูผู้สอน" class="flex-1 min-w-0 px-2 py-2 rounded-lg border border-ink-200 text-xs">
-          <button data-ocr-remove="${i}" class="w-7 h-7 shrink-0 rounded-lg bg-red-50 grid place-items-center text-red-500">${icon('x','w-3.5 h-3.5')}</button>
-        </div>`).join('')}
-    </div>
-    <button id="ocr-save-all" class="w-full mt-4 py-3 rounded-xl bg-brand-600 text-white font-bold text-sm">บันทึกทั้งหมดลงห้องเรียน</button>
-  `;
-  renderIcons();
-  let rows = items.map((it,i) => ({ ...it, _id:i }));
-  const reRender = () => {
-    document.querySelectorAll('[data-ocr-remove]').forEach(b => b.onclick = () => {
-      rows = rows.filter(r => String(r._id) !== b.dataset.ocrRemove);
-      renderOcrPreview(rows);
-    });
-  };
-  reRender();
-  const ocrSaveBtn = document.getElementById('ocr-save-all');
-  ocrSaveBtn.onclick = async () => {
-    const codes = [...document.querySelectorAll('[data-ocr-code]')];
-    const payload = codes.map((el) => {
-      const i = el.dataset.ocrCode;
-      return {
-        classroom_id: state.classroom.id,
-        subject_code: document.querySelector(`[data-ocr-code="${i}"]`).value.trim(),
-        subject_name: document.querySelector(`[data-ocr-name="${i}"]`).value.trim(),
-        teacher_name: document.querySelector(`[data-ocr-teacher="${i}"]`).value.trim(),
-      };
-    }).filter(p => p.subject_code);
-    if (!payload.length) { toast('ไม่มีข้อมูลให้บันทึก', 'error'); return; }
-    const originalLabel = ocrSaveBtn.textContent;
-    ocrSaveBtn.disabled = true; ocrSaveBtn.textContent = 'กำลังบันทึก...';
-    try {
-      const sb = await ensureSupabase();
-      if (!sb) return;
-      const { error } = await sb.from('subjects').insert(payload);
-      if (error) { toast('บันทึกไม่สำเร็จ', 'error'); console.error(error); return; }
-      toast(`เพิ่ม ${payload.length} รายวิชาแล้ว`, 'success');
-      await loadClassroomData();
-      renderSubjectManager();
-    } catch (e) {
-      console.error(e);
-      toast('เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง', 'error');
-    } finally {
-      if (ocrSaveBtn.isConnected) { ocrSaveBtn.disabled = false; ocrSaveBtn.textContent = originalLabel; }
+      if (saveSubjectBtn.isConnected) { saveSubjectBtn.disabled = false; saveSubjectLabel.textContent = 'บันทึกรายวิชา'; }
     }
   };
 }
@@ -842,48 +788,46 @@ function renderAssignmentForm() {
   document.getElementById('modal-root').innerHTML = modalShell(`
     <div class="p-5">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="font-extrabold text-lg text-ink-900">${state.editingAssignment ? 'แก้ไขการบ้าน' : 'เพิ่มการบ้านใหม่'}</h3>
-        <button id="modal-close" class="w-8 h-8 rounded-lg bg-ink-50 grid place-items-center">${icon('x','w-4 h-4')}</button>
+        <h3 class="font-extrabold text-lg text-slate-900 dark:text-white">${state.editingAssignment ? 'แก้ไขการบ้าน' : 'เพิ่มการบ้านใหม่'}</h3>
+        <button id="modal-close" class="${closeBtnCls}">${icon('x','w-4 h-4')}</button>
       </div>
       <div class="space-y-3">
         <div>
-          <label class="text-xs font-semibold text-ink-500 mb-1 block">วิชา</label>
-          <select id="f-subject" class="w-full px-3.5 py-2.5 rounded-xl border border-ink-200 outline-none text-sm bg-white">
+          <label class="${labelCls}">วิชา</label>
+          <select id="f-subject" class="${inputCls}">
             <option value="">— ไม่ระบุวิชา —</option>
             ${state.subjects.map(s => `<option value="${s.id}" ${a.subject_id===s.id?'selected':''}>${esc(s.subject_code)} · ${esc(s.subject_name||'')}</option>`).join('')}
           </select>
         </div>
         <div>
-          <label class="text-xs font-semibold text-ink-500 mb-1 block">ชื่องาน</label>
-          <input id="f-title" value="${esc(a.title)}" placeholder="แบบฝึกหัดบทที่ 3 หน้า 45" class="w-full px-3.5 py-2.5 rounded-xl border border-ink-200 outline-none text-sm">
+          <label class="${labelCls}">ชื่องาน</label>
+          <input id="f-title" value="${esc(a.title)}" placeholder="แบบฝึกหัดบทที่ 3 หน้า 45" class="${inputCls}">
         </div>
         <div>
-          <label class="text-xs font-semibold text-ink-500 mb-1 block">รายละเอียด</label>
-          <textarea id="f-desc" rows="3" placeholder="คำสั่งงานเพิ่มเติม..." class="w-full px-3.5 py-2.5 rounded-xl border border-ink-200 outline-none text-sm resize-none">${esc(a.description)}</textarea>
+          <label class="${labelCls}">รายละเอียด</label>
+          <textarea id="f-desc" rows="3" placeholder="คำสั่งงานเพิ่มเติม..." class="${inputCls} resize-none">${esc(a.description)}</textarea>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-xs font-semibold text-ink-500 mb-1 block">ประเภทงาน</label>
-            <select id="f-type" class="w-full px-3.5 py-2.5 rounded-xl border border-ink-200 outline-none text-sm bg-white">
+            <label class="${labelCls}">ประเภทงาน</label>
+            <select id="f-type" class="${inputCls}">
               <option value="INDIVIDUAL" ${a.task_type==='INDIVIDUAL'?'selected':''}>งานเดี่ยว</option>
               <option value="GROUP" ${a.task_type==='GROUP'?'selected':''}>งานกลุ่ม</option>
             </select>
           </div>
           <div>
-            <label class="text-xs font-semibold text-ink-500 mb-1 block">กำหนดส่ง</label>
-            <input id="f-due" type="datetime-local" value="${dueLocal}" class="w-full px-3.5 py-2.5 rounded-xl border border-ink-200 outline-none text-sm num">
+            <label class="${labelCls}">กำหนดส่ง</label>
+            <input id="f-due" type="datetime-local" value="${dueLocal}" class="${inputCls} num">
           </div>
         </div>
         <div>
-          <label class="text-xs font-semibold text-ink-500 mb-1 block">ชื่อผู้โพสต์ (ตัวแทนห้อง)</label>
-          <input id="f-creator" value="${esc(a.created_by)}" placeholder="เช่น เลขาห้อง" class="w-full px-3.5 py-2.5 rounded-xl border border-ink-200 outline-none text-sm">
+          <label class="${labelCls}">ชื่อผู้โพสต์ (ตัวแทนห้อง)</label>
+          <input id="f-creator" value="${esc(a.created_by)}" placeholder="เช่น เลขาห้อง" class="${inputCls}">
         </div>
         <div>
-          <label class="text-xs font-semibold text-ink-500 mb-1 block">รูปภาพประกอบ</label>
-          <input id="f-image" type="file" accept="image/*" class="w-full text-sm">
-          <div id="image-preview-wrap" class="mt-2">
-            ${a.image_url ? `<img src="${esc(a.image_url)}" class="w-20 h-20 object-cover rounded-xl">` : ''}
-          </div>
+          <label class="${labelCls}">รูปภาพประกอบ (ไม่บังคับ)</label>
+          <input id="f-image" type="file" accept="image/*" class="w-full text-sm text-slate-500 dark:text-slate-400">
+          ${imageFieldPreview(a.image_url, 'assignment-image-preview')}
         </div>
       </div>
       <button id="save-assignment" class="w-full mt-5 py-3 rounded-xl bg-brand-600 text-white font-bold text-sm flex items-center justify-center gap-2">
@@ -895,14 +839,20 @@ function renderAssignmentForm() {
   document.getElementById('modal-close').onclick = closeModal;
   document.getElementById('modal-backdrop').addEventListener('click', e => { if (e.target.id==='modal-backdrop') closeModal(); });
 
-  document.getElementById('save-assignment').onclick = async () => {
+  document.getElementById('f-image').onchange = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    document.getElementById('assignment-image-preview').innerHTML = `<img src="${URL.createObjectURL(f)}" class="w-16 h-16 object-cover rounded-xl border border-slate-200 dark:border-slate-700">`;
+  };
+
+  const btn = document.getElementById('save-assignment');
+  const label = document.getElementById('save-assignment-label');
+  btn.onclick = async () => {
     const title = document.getElementById('f-title').value.trim();
     const due = document.getElementById('f-due').value;
     if (!title) { toast('กรุณากรอกชื่องาน', 'error'); return; }
     if (!due) { toast('กรุณาเลือกกำหนดส่ง', 'error'); return; }
 
-    const btn = document.getElementById('save-assignment');
-    const label = document.getElementById('save-assignment-label');
     btn.disabled = true; label.textContent = 'กำลังบันทึก...';
 
     try {
@@ -912,18 +862,15 @@ function renderAssignmentForm() {
       let image_url = a.image_url || null;
       const fileInput = document.getElementById('f-image');
       if (fileInput.files[0]) {
+        label.textContent = 'กำลังอัปโหลดรูป...';
         try {
-          const blob = await compressImage(fileInput.files[0]);
-          const path = `${state.classroom.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.jpg`;
-          const { error: upErr } = await sb.storage.from('homework-images').upload(path, blob, { contentType: 'image/jpeg', upsert: true });
-          if (upErr) throw upErr;
-          const { data: pub } = sb.storage.from('homework-images').getPublicUrl(path);
-          image_url = pub.publicUrl;
+          image_url = await uploadImage(fileInput.files[0], 'assignments', { maxDim: 1200, quality: 0.75, maxBytes: 250*1024 });
         } catch (err) {
           console.error(err);
           toast('อัปโหลดรูปไม่สำเร็จ', 'error');
           return;
         }
+        label.textContent = 'กำลังบันทึก...';
       }
 
       const payload = {
@@ -967,58 +914,67 @@ function renderImagePreviewModal(url) {
   document.getElementById('img-backdrop').addEventListener('click', e => { if (e.target.id==='img-backdrop') closeModal(); });
 }
 
-// ---------- RENDER / ROUTER ----------------------------------------------------------
+function promptNewClassroomPasscode(g, r) {
+  document.getElementById('modal-root').innerHTML = modalShell(`
+    <div class="p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-extrabold text-lg text-slate-900 dark:text-white">ยังไม่มีห้องนี้ในระบบ</h3>
+        <button id="modal-close" class="${closeBtnCls}">${icon('x','w-4 h-4')}</button>
+      </div>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">ตั้งรหัสผ่านสำหรับตัวแทนห้อง ${GRADE_TH[g]}/${r} เพื่อสร้างห้องนี้ขึ้นมาใหม่ (ใช้สำหรับจัดการวิชาและการบ้านในภายหลัง)</p>
+      <input id="new-passcode" type="text" inputmode="numeric" maxlength="10" placeholder="ตั้งรหัสผ่าน 4-10 ตัวอักษร" class="${inputCls} text-center tracking-widest font-bold num text-lg py-3">
+      <button id="create-classroom" class="w-full mt-4 py-3 rounded-xl bg-brand-600 text-white font-bold text-sm">สร้างห้องเรียน</button>
+    </div>
+  `);
+  renderIcons();
+  document.getElementById('modal-close').onclick = closeModal;
+  document.getElementById('modal-backdrop').addEventListener('click', e => { if (e.target.id==='modal-backdrop') closeModal(); });
+  const createBtn = document.getElementById('create-classroom');
+  createBtn.onclick = async () => {
+    const code = document.getElementById('new-passcode').value.trim();
+    if (code.length < 4) { toast('รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร', 'error'); return; }
+    const originalLabel = createBtn.textContent;
+    createBtn.disabled = true; createBtn.textContent = 'กำลังสร้างห้อง...';
+    try {
+      const sb = await ensureSupabase();
+      if (!sb) return;
+      const { data, error } = await sb.rpc('get_or_create_classroom', { p_grade: g, p_room: r, p_passcode: code });
+      if (error) { toast('สร้างห้องไม่สำเร็จ', 'error'); console.error(error); return; }
+      const row = Array.isArray(data) ? data[0] : data;
+      state.classroom = { id: row.id, grade_level: g, room_number: r };
+      localStorage.setItem(LS.classroom, JSON.stringify(state.classroom));
+      // The creator already knows the passcode they just set — unlock rep mode immediately.
+      setRepUnlocked(row.id);
+      state.repMode = true;
+      closeModal();
+      toast('สร้างห้องเรียนแล้ว จำรหัสผ่านนี้ไว้นะ', 'success');
+      state.view = 'dashboard';
+      await loadClassroomData();
+    } catch (e) {
+      console.error(e);
+      toast('เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง', 'error');
+    } finally {
+      if (createBtn.isConnected) { createBtn.disabled = false; createBtn.textContent = originalLabel; }
+    }
+  };
+}
+
+// ---------- RENDER / ROUTER ----------------------------------------------------
 function render() {
   const app = document.getElementById('app');
-  if (state.view === 'settings') app.innerHTML = ViewSettings();
-  else if (state.view === 'picker') app.innerHTML = ViewPicker();
-  else if (state.view === 'dashboard') app.innerHTML = ViewDashboard();
+  if (state.view === 'picker') app.innerHTML = ViewPicker();
+  else if (state.view === 'dashboard' && state.classroom) app.innerHTML = ViewDashboard();
+  else app.innerHTML = '';
   renderIcons();
   wireEvents();
 }
 
 function wireEvents() {
-  if (state.view === 'settings') {
-    const saveBtn = document.getElementById('save-config');
-    saveBtn.onclick = async () => {
-      const url = document.getElementById('cfg-url').value.trim();
-      const key = document.getElementById('cfg-key').value.trim();
-      if (!url || !key) { toast('กรุณากรอกให้ครบ', 'error'); return; }
-      if (!/^https?:\/\//i.test(url)) { toast('Project URL ต้องขึ้นต้นด้วย https://', 'error'); return; }
-
-      const originalLabel = saveBtn.textContent;
-      saveBtn.disabled = true; saveBtn.textContent = 'กำลังตรวจสอบการเชื่อมต่อ...';
-      try {
-        setConfig(url, key);
-        const sb = initSupabase();
-        if (!sb) {
-          toast('โหลด Supabase SDK ไม่สำเร็จ ตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่', 'error');
-          return;
-        }
-        // Do a real, cheap request so a wrong URL/key surfaces here instead
-        // of failing silently later on the picker screen.
-        const { error } = await sb.from('classrooms_public').select('id').limit(1);
-        if (error) {
-          console.error(error);
-          toast('เชื่อมต่อ Supabase ไม่สำเร็จ ตรวจสอบ URL และ Key อีกครั้ง', 'error');
-          state.supabase = null;
-          return;
-        }
-        toast('บันทึกการตั้งค่าแล้ว', 'success');
-        state.view = state.classroom ? 'dashboard' : 'picker';
-        if (state.view === 'dashboard') { await loadClassroomData(); } else { render(); }
-      } catch (e) {
-        console.error(e);
-        toast('เกิดข้อผิดพลาด ลองใหม่อีกครั้ง', 'error');
-      } finally {
-        if (saveBtn.isConnected) { saveBtn.disabled = false; saveBtn.textContent = originalLabel; }
-      }
-    };
-  }
+  const themeBtn = document.getElementById('theme-toggle');
+  if (themeBtn) themeBtn.onclick = toggleTheme;
 
   if (state.view === 'picker') {
     let g = null, r = null;
-    document.getElementById('open-settings').onclick = () => { state.view = 'settings'; render(); };
     document.querySelectorAll('.grade-btn').forEach(b => b.onclick = () => {
       g = Number(b.dataset.grade);
       document.querySelectorAll('.grade-btn').forEach(x => x.dataset.active = (x===b));
@@ -1045,6 +1001,7 @@ function wireEvents() {
         if (existing) {
           state.classroom = { id: existing.id, grade_level: g, room_number: r };
           localStorage.setItem(LS.classroom, JSON.stringify(state.classroom));
+          state.repMode = isRepUnlocked(existing.id);
           state.view = 'dashboard';
           await loadClassroomData();
         } else {
@@ -1062,7 +1019,6 @@ function wireEvents() {
   if (state.view === 'dashboard') {
     if (state.repMode && !isRepUnlocked(state.classroom.id)) state.repMode = false;
 
-    document.getElementById('open-settings').onclick = () => { state.view = 'settings'; render(); };
     document.getElementById('switch-room').onclick = async () => {
       const ok = await confirmDialog({ title:'เปลี่ยนห้องเรียน', message:'ต้องการออกจากห้องนี้และเลือกห้องใหม่หรือไม่?', confirmLabel:'เปลี่ยนห้อง' });
       if (!ok) return;
@@ -1117,73 +1073,27 @@ function wireEvents() {
   }
 }
 
-function promptNewClassroomPasscode(g, r) {
-  document.getElementById('modal-root').innerHTML = modalShell(`
-    <div class="p-5">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="font-extrabold text-lg text-ink-900">ยังไม่มีห้องนี้ในระบบ</h3>
-        <button id="modal-close" class="w-8 h-8 rounded-lg bg-ink-50 grid place-items-center">${icon('x','w-4 h-4')}</button>
-      </div>
-      <p class="text-sm text-ink-500 mb-4">ตั้งรหัสผ่านสำหรับตัวแทนห้อง ${GRADE_TH[g]}/${r} เพื่อสร้างห้องนี้ขึ้นมาใหม่ (ใช้สำหรับจัดการวิชาและการบ้านในภายหลัง)</p>
-      <input id="new-passcode" type="text" inputmode="numeric" placeholder="ตั้งรหัสผ่าน 4-10 ตัวอักษร" class="w-full px-3.5 py-3 rounded-xl border border-ink-200 outline-none text-center tracking-widest font-bold num text-lg">
-      <button id="create-classroom" class="w-full mt-4 py-3 rounded-xl bg-brand-600 text-white font-bold text-sm">สร้างห้องเรียน</button>
-    </div>
-  `);
-  renderIcons();
-  document.getElementById('modal-close').onclick = closeModal;
-  document.getElementById('modal-backdrop').addEventListener('click', e => { if (e.target.id==='modal-backdrop') closeModal(); });
-  const createBtn = document.getElementById('create-classroom');
-  createBtn.onclick = async () => {
-    const code = document.getElementById('new-passcode').value.trim();
-    if (code.length < 4) { toast('รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร', 'error'); return; }
-    const originalLabel = createBtn.textContent;
-    createBtn.disabled = true; createBtn.textContent = 'กำลังสร้างห้อง...';
-    try {
-      const sb = await ensureSupabase();
-      if (!sb) return;
-      const { data, error } = await sb.rpc('get_or_create_classroom', { p_grade: g, p_room: r, p_passcode: code });
-      if (error) { toast('สร้างห้องไม่สำเร็จ', 'error'); console.error(error); return; }
-      const row = Array.isArray(data) ? data[0] : data;
-      state.classroom = { id: row.id, grade_level: g, room_number: r };
-      localStorage.setItem(LS.classroom, JSON.stringify(state.classroom));
-      closeModal();
-      toast('สร้างห้องเรียนแล้ว จำรหัสผ่านนี้ไว้นะ', 'success');
-      state.view = 'dashboard';
-      await loadClassroomData();
-    } catch (e) {
-      console.error(e);
-      toast('เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง', 'error');
-    } finally {
-      if (createBtn.isConnected) { createBtn.disabled = false; createBtn.textContent = originalLabel; }
-    }
-  };
-}
-
 // ---------- BOOT ----------------------------------------------------------
 function boot() {
   try {
     loadLocal();
-    const cfg = getConfig();
-    if (!cfg) { state.view = 'settings'; render(); return; }
     initSupabase();
     if (!state.supabase) {
-      // CDN script may not have finished loading yet in slower networks —
-      // give it one short retry before falling back to Settings.
+      // CDN script may not have finished loading yet on slower networks —
+      // give it one short retry before surfacing an error toast.
       setTimeout(() => {
         initSupabase();
         if (!state.supabase) {
-          toast('เชื่อมต่อ Supabase ไม่สำเร็จ กรุณาตรวจสอบการตั้งค่า', 'error');
-          state.view = 'settings'; render();
-        } else {
-          continueBoot();
+          toast('เชื่อมต่อ Supabase ไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วรีเฟรชหน้านี้', 'error');
         }
+        continueBoot();
       }, 400);
       return;
     }
     continueBoot();
   } catch (e) {
     console.error('Boot failed:', e);
-    state.view = 'settings';
+    state.view = 'picker';
     render();
   }
 }
