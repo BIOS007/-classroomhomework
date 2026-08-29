@@ -949,7 +949,7 @@ function renderRepGate() {
         <button id="modal-close" class="${closeBtnCls}">${icon('x','w-4 h-4')}</button>
       </div>
       <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">กรอกรหัสผ่านของห้อง ${GRADE_TH[state.classroom.grade_level]}/${state.classroom.room_number} เพื่อจัดการวิชาและการบ้าน</p>
-      <input id="passcode-input" type="password" inputmode="numeric" maxlength="10" placeholder="รหัสผ่านห้อง" autofocus
+      <input id="passcode-input" type="password" maxlength="10" placeholder="รหัสผ่านห้อง" autofocus
         class="${inputCls} text-center tracking-widest font-bold num text-lg py-3">
       <div id="passcode-error" class="text-red-500 dark:text-red-400 text-xs text-center mt-2 hidden">รหัสผ่านไม่ถูกต้อง</div>
       <button id="passcode-submit" class="w-full mt-4 py-3 rounded-xl bg-brand-600 text-white font-bold text-sm">ปลดล็อก</button>
@@ -1641,7 +1641,7 @@ function promptNewClassroomPasscode(g, r) {
         <button id="modal-close" class="${closeBtnCls}">${icon('x','w-4 h-4')}</button>
       </div>
       <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">ตั้งรหัสผ่านสำหรับตัวแทนห้อง ${GRADE_TH[g]}/${r} เพื่อสร้างห้องนี้ขึ้นมาใหม่ (ใช้สำหรับจัดการวิชาและการบ้านในภายหลัง)</p>
-      <input id="new-passcode" type="text" inputmode="numeric" maxlength="10" placeholder="ตั้งรหัสผ่าน 4-10 ตัวอักษร" class="${inputCls} text-center tracking-widest font-bold num text-lg py-3">
+      <input id="new-passcode" type="text" maxlength="10" placeholder="ตั้งรหัสผ่าน 4-10 ตัวอักษร" class="${inputCls} text-center tracking-widest font-bold num text-lg py-3">
       <button id="create-classroom" class="w-full mt-4 py-3 rounded-xl bg-brand-600 text-white font-bold text-sm">สร้างห้องเรียน</button>
     </div>
   `);
