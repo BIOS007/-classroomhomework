@@ -763,12 +763,12 @@ function ViewDashboard() {
       </div>
 
       ${state.subjects.length ? `
-      <div class="mt-2 flex gap-1.5 overflow-x-auto no-scrollbar">
-        <button data-subj="all" class="subj-filter-btn shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold border ${state.subjectFilter==='all'?'bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-800 dark:border-slate-100':'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800'}">ทุกวิชา</button>
+      <div class="mt-2 flex items-center gap-2 overflow-x-auto no-scrollbar py-1 whitespace-nowrap">
+        <button data-subj="all" class="subj-filter-btn flex-shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold border ${state.subjectFilter==='all'?'bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-800 dark:border-slate-100':'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800'}">ทุกวิชา</button>
         ${state.subjects.map(s => {
           const col = colorForSubject(s.subject_code);
           const active = state.subjectFilter === s.id;
-          return `<button data-subj="${s.id}" class="subj-filter-btn shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold border ${active?'bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-800 dark:border-slate-100':`${col.bg} ${col.text} border-transparent`}">${esc(s.subject_code)}</button>`;
+          return `<button data-subj="${s.id}" class="subj-filter-btn flex-shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold border ${active?'bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-800 dark:border-slate-100':`${col.bg} ${col.text} border-transparent`}">${esc(s.subject_name || s.subject_code)}</button>`;
         }).join('')}
       </div>` : ''}
     </div>
