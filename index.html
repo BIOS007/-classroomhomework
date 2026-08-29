@@ -106,6 +106,18 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // for all media uploads (homework images, teacher photos, subject icons).
 const GOOGLE_DRIVE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyDkqxAfc1DkSwadnWHhXI2eBqh0NxQQiXSBmL_x8A4MzMoJ4UhFzKdJFary_xc72RmQw/exec";
 
+// OPTIONAL — Smart Workload persistence migration:
+// The Quick Tag picker in the assignment form (see Section 3.3 of the spec) tries
+// to save `workload_type` / `workload_minutes` alongside each assignment so the
+// override is shared with every student, not just the device that created it.
+// If your `assignments` table doesn't have these columns yet, run once in the
+// Supabase SQL editor:
+//   ALTER TABLE assignments ADD COLUMN IF NOT EXISTS workload_type text;
+//   ALTER TABLE assignments ADD COLUMN IF NOT EXISTS workload_minutes integer;
+// Without this migration the app still works fine — saves simply fall back to
+// omitting those two fields, and every assignment is classified automatically
+// by the keyword engine instead (see classifyAssignment()).
+
 // ---------- STATE ------------------------------------------------------------
 const LS = {
   classroom: 'chtk_classroom',      // { id, grade_level, room_number }
@@ -113,6 +125,7 @@ const LS = {
   repUnlocked: 'cht_rep_unlocked',  // { [classroomId]: true }
   theme: 'chtk_theme',              // 'light' | 'dark'
   geminiKey: 'cht_gemini_key',      // Gemini API key, stored locally for OCR scanning
+  smartSort: 'cht_smart_sort',      // '1' | '0' — Smart Priority Sort toggle, remembered per device
 };
 
 const state = {
@@ -129,11 +142,13 @@ const state = {
   loading: false,
   editingAssignment: null,
   editingSubject: null,
+  smartSort: false,          // Smart Priority Sort toggle (§3.2)
 };
 
 function loadLocal() {
   try { state.doneIds = new Set(JSON.parse(localStorage.getItem(LS.done) || '[]')); } catch(e) { state.doneIds = new Set(); }
   try { state.classroom = JSON.parse(localStorage.getItem(LS.classroom) || 'null'); } catch(e) { state.classroom = null; }
+  try { state.smartSort = localStorage.getItem(LS.smartSort) === '1'; } catch(e) { state.smartSort = false; }
 }
 function saveDone() { localStorage.setItem(LS.done, JSON.stringify([...state.doneIds])); }
 
@@ -242,6 +257,128 @@ function dueBadge(dueDateStr) {
     return { label: 'ส่งพรุ่งนี้', cls: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20', icon: 'clock' };
   }
   return { label: `เหลืออีก ${diffDays} วัน`, cls: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20', icon: 'calendar' };
+}
+
+// ============================================================================
+// SMART WORKLOAD & PRIORITY SCHEDULING SYSTEM
+// (ระบบวิเคราะห์ภาระงานและจัดลำดับความเร่งด่วนอัจฉริยะ)
+// ============================================================================
+
+// ---- 2.1 Keyword-based Assignment Classifier --------------------------------
+// Maps a workload tier to its difficulty score (D), estimated minutes (T),
+// and the label/emoji shown on badges.
+const WORKLOAD_PRESETS = {
+  short:  { difficulty: 1, minutes: 20, label: 'งานสั้น',    emoji: '📝' },
+  medium: { difficulty: 2, minutes: 45, label: 'งานปานกลาง', emoji: '📊' },
+  large:  { difficulty: 3, minutes: 90, label: 'งานใหญ่',    emoji: '🎬' },
+};
+// Checked in order large → medium → short: a report/project title often also
+// contains a generic word like "หน้า" or "ข้อ", so the more specific/heavier
+// keyword set should win when several tiers match.
+const WORKLOAD_KEYWORDS = {
+  large:  ['รายงาน','โครงงาน','สไลด์','พรีเซนต์','นำเสนอ','คลิป','วิดีโอ','โมเดล','ประดิษฐ์'],
+  medium: ['ใบงาน','ชีท','สรุป','mind map','ผังความคิด','วาดภาพ','แปล'],
+  short:  ['แบบฝึกหัด','ในสมุด','ตอบคำถาม','หน้า','ข้อ','ตรวจ','ส่งท้ายคาบ'],
+};
+
+// Classifies an assignment into a workload tier (type/difficulty/estimated
+// minutes). A rep-chosen Quick Tag (workload_type on the row) always wins;
+// otherwise the title+description are scanned for keywords; otherwise it
+// falls back to the spec's default (medium difficulty, 30 minutes).
+function classifyAssignment(a) {
+  if (a && a.workload_type && WORKLOAD_PRESETS[a.workload_type]) {
+    const preset = WORKLOAD_PRESETS[a.workload_type];
+    return {
+      type: a.workload_type,
+      difficulty: preset.difficulty,
+      minutes: a.workload_minutes || preset.minutes,
+      label: preset.label,
+      emoji: preset.emoji,
+      source: 'quick-tag',
+    };
+  }
+  const hay = `${a?.title || ''} ${a?.description || ''}`.toLowerCase();
+  for (const type of ['large', 'medium', 'short']) {
+    if (WORKLOAD_KEYWORDS[type].some(kw => hay.includes(kw.toLowerCase()))) {
+      const preset = WORKLOAD_PRESETS[type];
+      return { type, difficulty: preset.difficulty, minutes: preset.minutes, label: preset.label, emoji: preset.emoji, source: 'keyword' };
+    }
+  }
+  // Default when no keyword matches anything: medium difficulty, lighter 30-min estimate.
+  return { type: 'medium', difficulty: 2, minutes: 30, label: 'งานปานกลาง', emoji: '📊', source: 'default' };
+}
+
+// ---- 2.2 Priority Scoring Algorithm -----------------------------------------
+// P = (100 / (hoursRemaining + 1)) * 0.6 + (D * 15) * 0.4 — overdue = 999 (max).
+// Higher P = should be done sooner. Used to power "Smart Priority Sort".
+function priorityScore(a) {
+  const due = new Date(a.due_date);
+  const now = new Date();
+  if (due.getTime() < now.getTime()) return 999;
+  const hoursLeft = (due.getTime() - now.getTime()) / 3600000;
+  const { difficulty } = classifyAssignment(a);
+  const urgencyPart = (100 / (hoursLeft + 1)) * 0.6;
+  const weightPart = (difficulty * 15) * 0.4;
+  return urgencyPart + weightPart;
+}
+// An assignment is flagged 🔥 "ด่วนมาก" when it's not done and either overdue
+// or its priority score has climbed into the top urgency band.
+function isUrgent(a) {
+  return !state.doneIds.has(a.id) && priorityScore(a) >= 75;
+}
+
+// ---- 2.3 Daily & Weekly Workload Forecaster ---------------------------------
+const WEEKDAY_TH_SHORT = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+const WEEKDAY_TH_FULL  = ['วันอาทิตย์', 'วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสฯ', 'วันศุกร์', 'วันเสาร์'];
+
+function workloadLevel(totalMinutes) {
+  const hrs = totalMinutes / 60;
+  if (hrs > 3)   return { key: 'red',    label: 'งานหนาแน่น', emoji: '🔴', cls: 'bg-red-500',    chip: 'bg-red-500/10 text-red-600 dark:text-red-400' };
+  if (hrs >= 1.5) return { key: 'yellow', label: 'ปานกลาง',    emoji: '🟡', cls: 'bg-amber-400',  chip: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' };
+  return           { key: 'green',  label: 'งานเบา',      emoji: '🟢', cls: 'bg-emerald-500', chip: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' };
+}
+function minutesLabel(minutes) {
+  if (!minutes || minutes <= 0) return '0 นาที';
+  if (minutes < 60) return `${minutes} นาที`;
+  const hrs = minutes / 60;
+  return `${hrs % 1 === 0 ? hrs.toFixed(0) : hrs.toFixed(1)} ชม.`;
+}
+
+// Buckets every *pending* assignment due this Mon–Sun (Asia/Bangkok) into its
+// due day, summing each day's estimated minutes for the weekly bar chart.
+function computeWeeklyWorkload() {
+  const pending = state.assignments.filter(a => !state.doneIds.has(a.id));
+  const todayYMD = bangkokYMD(new Date());
+  const todayDow = new Date(todayYMD).getUTCDay(); // 0=Sun..6=Sat
+  const mondayOffset = todayDow === 0 ? -6 : 1 - todayDow;
+  const mondayYMD = todayYMD + mondayOffset * 86400000;
+
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const dateMs = mondayYMD + i * 86400000;
+    return { dateMs, dow: new Date(dateMs).getUTCDay(), minutes: 0, items: [] };
+  });
+
+  pending.forEach(a => {
+    const dueYMD = bangkokYMD(new Date(a.due_date));
+    const day = days.find(d => d.dateMs === dueYMD);
+    if (!day) return; // due outside the current week
+    const cls = classifyAssignment(a);
+    day.minutes += cls.minutes;
+    day.items.push({ ...a, _cls: cls });
+  });
+
+  return days.map(d => ({ ...d, label: WEEKDAY_TH_SHORT[d.dow], level: workloadLevel(d.minutes), isToday: d.dateMs === todayYMD }));
+}
+
+// Smart Assistant Banner copy: when any day this week is 🔴, name the single
+// heaviest assignment due that day so students know what to start clearing first.
+function generateWorkloadAdvice(days) {
+  const redDays = days.filter(d => d.level.key === 'red' && d.items.length);
+  if (!redDays.length) return null;
+  const worst = redDays[0];
+  const heaviest = [...worst.items].sort((x, y) => y._cls.minutes - x._cls.minutes)[0];
+  const hrs = (worst.minutes / 60).toFixed(1);
+  return `${WEEKDAY_TH_FULL[worst.dow]} มีงานสะสม ${hrs} ชม. (🔴) แนะนำให้ทยอยเคลียร์งาน "${heaviest.title}" ตั้งแต่วันนี้`;
 }
 
 // Builds a formatted plain-text summary of pending assignments (with countdown
@@ -531,6 +668,17 @@ function ViewDashboard() {
 
   const pendingCount = state.assignments.filter(a => !state.doneIds.has(a.id)).length;
 
+  // Smart Priority Sort: pending items first (ranked by urgency), completed
+  // items pushed to the bottom (kept in their normal due-date order).
+  if (state.smartSort) {
+    filtered.sort((x, y) => {
+      const xDone = state.doneIds.has(x.id), yDone = state.doneIds.has(y.id);
+      if (xDone !== yDone) return xDone ? 1 : -1;
+      if (xDone && yDone) return new Date(x.due_date) - new Date(y.due_date);
+      return priorityScore(y) - priorityScore(x);
+    });
+  }
+
   return `
   <div class="fade-in">
     <div class="sticky top-0 z-30 bg-slate-100/90 dark:bg-slate-950/90 backdrop-blur px-5 pt-5 pb-3">
@@ -576,6 +724,12 @@ function ViewDashboard() {
     </div>
 
     <div class="px-5 pt-2 space-y-3">
+      ${renderWorkloadDashboard()}
+
+      <button id="smart-sort-toggle" class="w-full py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${state.smartSort ? 'bg-amber-500 border-amber-500 text-white' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'}">
+        ${icon('zap', 'w-3.5 h-3.5')} ${state.smartSort ? 'กำลังเรียงตามความเร่งด่วน (Smart Sort)' : 'เรียงตามความเร่งด่วน (Smart Sort)'}
+      </button>
+
       ${state.repMode ? `
       <button id="add-assignment-btn" class="w-full py-3 rounded-xl border-2 border-dashed border-brand-300 dark:border-brand-700 text-brand-600 dark:text-brand-400 font-bold text-sm flex items-center justify-center gap-1.5 bg-brand-50/50 dark:bg-brand-500/10">
         ${icon('plus','w-4 h-4')} เพิ่มการบ้านใหม่
@@ -585,6 +739,47 @@ function ViewDashboard() {
       </button>` : ''}
 
       ${state.loading ? renderSkeletons() : (filtered.length ? filtered.map(renderCard).join('') : renderEmpty())}
+    </div>
+  </div>`;
+}
+
+// Weekly Workload Dashboard (§3.1): a 7-day minimal bar chart plus the Smart
+// Assistant Banner, built with pure CSS/flexbox (no charting library needed).
+function renderWorkloadDashboard() {
+  const days = computeWeeklyWorkload();
+  const advice = generateWorkloadAdvice(days);
+  const today = days.find(d => d.isToday);
+  const todayMinutes = today ? today.minutes : 0;
+  const todayLevel = workloadLevel(todayMinutes);
+  const maxScaleMinutes = 240; // 4 hours — bars beyond this simply cap at 100% height
+
+  return `
+  <div class="bg-white dark:bg-slate-900 rounded-xl2 shadow-card border border-slate-200 dark:border-slate-800 p-4">
+    <div class="flex items-center justify-between mb-1">
+      <div class="flex items-center gap-1.5 font-bold text-sm text-slate-800 dark:text-slate-100">
+        ${icon('bar-chart-3', 'w-4 h-4 text-brand-500')} ภาระงานสัปดาห์นี้
+      </div>
+    </div>
+    <div class="text-xs text-slate-400 dark:text-slate-500 mb-3">
+      ภาระงานวันนี้: <span class="font-bold ${todayLevel.key==='red'?'text-red-600 dark:text-red-400':todayLevel.key==='yellow'?'text-amber-600 dark:text-amber-400':'text-emerald-600 dark:text-emerald-400'}">${minutesLabel(todayMinutes)} (${todayLevel.label} ${todayLevel.emoji})</span>
+    </div>
+
+    ${advice ? `
+    <div class="mb-3 flex items-start gap-2 p-2.5 rounded-xl bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 text-orange-700 dark:text-orange-400 text-xs leading-relaxed">
+      ${icon('sparkles', 'w-3.5 h-3.5 mt-0.5 shrink-0')}
+      <span>${esc(advice)}</span>
+    </div>` : ''}
+
+    <div class="flex items-end justify-between gap-1.5 h-24">
+      ${days.map(d => {
+        const pct = d.minutes > 0 ? Math.max(6, Math.min(100, (d.minutes / maxScaleMinutes) * 100)) : 3;
+        return `
+        <div class="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+          <span class="text-[9px] num text-slate-400 dark:text-slate-500 h-3">${d.minutes > 0 ? minutesLabel(d.minutes) : ''}</span>
+          <div class="w-full rounded-md ${d.minutes > 0 ? d.level.cls : 'bg-slate-100 dark:bg-slate-800'}" style="height:${pct}%"></div>
+          <span class="text-[10px] font-bold ${d.isToday ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-slate-500'}">${esc(d.label)}</span>
+        </div>`;
+      }).join('')}
     </div>
   </div>`;
 }
@@ -626,6 +821,7 @@ function renderCard(a) {
   const col = subj ? colorForSubject(subj.subject_code) : { bg:'bg-slate-100 dark:bg-slate-800', text:'text-slate-600 dark:text-slate-300' };
   const badge = dueBadge(a.due_date);
   const done = state.doneIds.has(a.id);
+  const cls = classifyAssignment(a);
   return `
   <div class="bg-white dark:bg-slate-900 rounded-xl2 shadow-card border border-slate-200 dark:border-slate-800 p-4 ${done ? 'opacity-60' : ''}" data-card="${a.id}">
     <div class="flex items-start justify-between gap-2">
@@ -635,6 +831,8 @@ function renderCard(a) {
           <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${col.bg} ${col.text}">${esc(subj?.subject_code || 'ไม่ระบุวิชา')}</span>
           ${subj?.subject_name ? `<span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium truncate">${esc(subj.subject_name)}</span>` : ''}
           <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${a.task_type==='GROUP' ? 'bg-fuchsia-50 dark:bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}">${a.task_type==='GROUP' ? 'งานกลุ่ม' : 'งานเดี่ยว'}</span>
+          <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">${cls.emoji} ${cls.label} ~${minutesLabel(cls.minutes)}</span>
+          ${!done && isUrgent(a) ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-500 text-white animate-pulse">🔥 ด่วนมาก</span>` : ''}
         </div>
       </div>
       ${state.repMode ? `
@@ -1150,7 +1348,7 @@ function renderSubjectForm() {
 
 // ----- Assignment form -----
 function renderAssignmentForm() {
-  const a = state.editingAssignment || { title:'', description:'', task_type:'INDIVIDUAL', subject_id:'', due_date:'', created_by:'', image_url:'', file_url:'', file_name:'', file_size_label:'' };
+  const a = state.editingAssignment || { title:'', description:'', task_type:'INDIVIDUAL', subject_id:'', due_date:'', created_by:'', image_url:'', file_url:'', file_name:'', file_size_label:'', workload_type:null, workload_minutes:null };
   const dueLocal = a.due_date ? new Date(new Date(a.due_date).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16) : '';
   document.getElementById('modal-root').innerHTML = modalShell(`
     <div class="p-5">
@@ -1192,6 +1390,17 @@ function renderAssignmentForm() {
           <input id="f-creator" value="${esc(a.created_by)}" placeholder="เช่น เลขาห้อง" class="${inputCls}">
         </div>
         <div>
+          <label class="${labelCls}">ระดับภาระงาน — Quick Tag (ไม่บังคับ)</label>
+          <div class="grid grid-cols-3 gap-2" id="workload-tag-group">
+            ${['short','medium','large'].map(t => {
+              const labels = { short:'สั้น ~20น.', medium:'ปานกลาง ~45น.', large:'ใหญ่ ~1.5ชม.+' };
+              const active = a.workload_type === t;
+              return `<button type="button" data-tag="${t}" class="workload-tag-btn py-2 rounded-xl border text-xs font-bold ${active ? 'bg-brand-600 text-white border-brand-600' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'}">${labels[t]}</button>`;
+            }).join('')}
+          </div>
+          <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">ไม่เลือก = ให้ระบบวิเคราะห์อัตโนมัติจากชื่อ/รายละเอียดงาน</p>
+        </div>
+        <div>
           <label class="${labelCls}">รูปภาพประกอบ (ไม่บังคับ)</label>
           <input id="f-image" type="file" accept="image/*" class="w-full text-sm text-slate-500 dark:text-slate-400">
           ${imageFieldPreview(a.image_url, 'assignment-image-preview')}
@@ -1217,6 +1426,19 @@ function renderAssignmentForm() {
     if (!f) return;
     document.getElementById('assignment-image-preview').innerHTML = `<img src="${URL.createObjectURL(f)}" class="w-16 h-16 object-cover rounded-xl border border-slate-200 dark:border-slate-700">`;
   };
+
+  // Quick Tag picker: click to select, click again to deselect (back to auto mode).
+  let selectedWorkloadType = a.workload_type || null;
+  function refreshWorkloadTagButtons() {
+    document.querySelectorAll('.workload-tag-btn').forEach(b => {
+      const active = b.dataset.tag === selectedWorkloadType;
+      b.className = `workload-tag-btn py-2 rounded-xl border text-xs font-bold ${active ? 'bg-brand-600 text-white border-brand-600' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'}`;
+    });
+  }
+  document.querySelectorAll('.workload-tag-btn').forEach(b => b.onclick = () => {
+    selectedWorkloadType = (selectedWorkloadType === b.dataset.tag) ? null : b.dataset.tag;
+    refreshWorkloadTagButtons();
+  });
 
   let removeDocAttachment = false;
   function wireDocRemoveBtn() {
@@ -1312,6 +1534,8 @@ function renderAssignmentForm() {
         file_url,
         file_name,
         file_size_label,
+        workload_type: selectedWorkloadType,
+        workload_minutes: selectedWorkloadType ? WORKLOAD_PRESETS[selectedWorkloadType].minutes : null,
       };
 
       let error;
@@ -1319,6 +1543,21 @@ function renderAssignmentForm() {
         ({ error } = await sb.from('assignments').update(payload).eq('id', state.editingAssignment.id));
       } else {
         ({ error } = await sb.from('assignments').insert(payload));
+      }
+      // The assignments table may not have the workload_type/workload_minutes
+      // columns yet (see migration note near GOOGLE_DRIVE_SCRIPT_URL) — if that's
+      // the only problem, retry without them so saving still succeeds; the Quick
+      // Tag then simply falls back to auto keyword-classification for everyone.
+      if (error && /column|schema cache/i.test(error.message || '')) {
+        const fallbackPayload = { ...payload };
+        delete fallbackPayload.workload_type;
+        delete fallbackPayload.workload_minutes;
+        if (state.editingAssignment) {
+          ({ error } = await sb.from('assignments').update(fallbackPayload).eq('id', state.editingAssignment.id));
+        } else {
+          ({ error } = await sb.from('assignments').insert(fallbackPayload));
+        }
+        if (!error) toast('บันทึกสำเร็จ (Quick Tag ยังไม่ถูกบันทึกถาวร — โปรดเพิ่มคอลัมน์ในฐานข้อมูล)', 'default');
       }
       if (error) { toast('บันทึกไม่สำเร็จ', 'error'); console.error(error); return; }
       toast('บันทึกการบ้านแล้ว', 'success');
@@ -1492,6 +1731,11 @@ function wireEvents() {
       if (state.repMode) { state.repMode = false; render(); return; }
       if (isRepUnlocked(state.classroom.id)) { state.repMode = true; render(); return; }
       renderRepGate();
+    };
+    document.getElementById('smart-sort-toggle').onclick = () => {
+      state.smartSort = !state.smartSort;
+      try { localStorage.setItem(LS.smartSort, state.smartSort ? '1' : '0'); } catch(e) {}
+      render();
     };
     document.getElementById('search-input').oninput = (e) => { state.search = e.target.value; render(); document.getElementById('search-input')?.focus(); };
     document.querySelectorAll('.tab-btn').forEach(b => b.onclick = () => { state.filter = b.dataset.tab; render(); });
