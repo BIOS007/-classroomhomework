@@ -542,6 +542,52 @@ async function uploadFileToGoogleDrive(file, { isImage = false, maxDim = 1200, q
   return result; // { url, downloadUrl, fileId, fileName, mimeType }
 }
 
+// Pulls a Google Drive file ID out of any of the URL shapes the Apps Script
+// (or Drive UI) commonly returns: /file/d/ID/view, ?id=ID, uc?id=, open?id=,
+// thumbnail?id=, or lh3.googleusercontent.com/d/ID. Returns null if none match.
+function extractDriveFileId(url) {
+  if (!url) return null;
+  const patterns = [
+    /\/d\/([a-zA-Z0-9_-]{10,})/,   // .../file/d/FILE_ID/view  or  .../d/FILE_ID
+    /[?&]id=([a-zA-Z0-9_-]{10,})/, // ...?id=FILE_ID  (uc, open, thumbnail links)
+  ];
+  for (const re of patterns) {
+    const m = url.match(re);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+// Asks the Google Apps Script web app to delete a file from Drive by ID.
+// Best-effort: throws on failure so the caller can decide whether to continue.
+async function deleteFileFromGoogleDrive(fileId) {
+  if (!fileId || !GOOGLE_DRIVE_SCRIPT_URL || GOOGLE_DRIVE_SCRIPT_URL.includes('YOUR_GOOGLE_APPS_SCRIPT')) return;
+  const response = await fetch(GOOGLE_DRIVE_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'delete', fileId }),
+  });
+  const result = await response.json();
+  if (!result.success) throw new Error(result.error || 'ลบไฟล์บน Google Drive ไม่สำเร็จ');
+}
+
+// Deletes every Drive file attached to an assignment (image_url + file_url,
+// which are usually different files). Each deletion is best-effort — a
+// failure here is logged but never blocks removing the assignment record.
+async function deleteAssignmentDriveFiles(assignment) {
+  const urls = [assignment?.image_url, assignment?.file_url].filter(Boolean);
+  for (const url of urls) {
+    const fileId = extractDriveFileId(url);
+    if (!fileId) continue;
+    try {
+      await deleteFileFromGoogleDrive(fileId);
+    } catch (e) {
+      console.error('ลบไฟล์บน Google Drive ไม่สำเร็จ:', fileId, e);
+    }
+  }
+}
+
+
 // folder ∈ 'teachers' | 'subjects' | 'assignments' — maps to the matching Drive
 // category, and to a room subfolder for assignment images only (teacher/subject
 // media is shared across classrooms so it stays in the shared folder).
@@ -1772,6 +1818,12 @@ function wireEvents() {
       if (!ok) return;
       b.disabled = true;
       try {
+        const target = state.assignments.find(a => a.id === b.dataset.delete);
+        // Delete any attached Drive files first, then remove the Supabase row —
+        // this order avoids leaving an assignment with a dangling file reference
+        // if something goes wrong partway through.
+        if (target) await deleteAssignmentDriveFiles(target);
+
         const sb = await ensureSupabase();
         if (!sb) return;
         const { error } = await sb.from('assignments').delete().eq('id', b.dataset.delete);
