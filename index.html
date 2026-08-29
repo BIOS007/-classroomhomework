@@ -316,62 +316,27 @@ async function compressImage(file, { maxDim = 1200, quality = 0.75, maxBytes = 2
   return canvasToBlob(canvas, 0.6);
 }
 
-// Uploads a compressed image blob to Google Drive via the Apps Script Web App
-// endpoint and returns the public lh3.googleusercontent.com URL it responds with.
-async function uploadToGoogleDrive(blob, fileName) {
-  if (!GOOGLE_DRIVE_SCRIPT_URL || GOOGLE_DRIVE_SCRIPT_URL.includes('YOUR_GOOGLE_APPS_SCRIPT')) {
-    throw new Error('กรุณาตั้งค่า GOOGLE_DRIVE_SCRIPT_URL ก่อนอัปโหลดรูปภาพ');
-  }
-  const base64Data = await new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result.split(',')[1]);
-    r.onerror = reject;
-    r.readAsDataURL(blob);
-  });
-  let response;
-  try {
-    response = await fetch(GOOGLE_DRIVE_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        base64Data,
-        mimeType: 'image/jpeg',
-        fileName
-      })
-    });
-  } catch (e) {
-    throw new Error('เชื่อมต่อ Google Drive ไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่');
-  }
-  let result;
-  try {
-    result = await response.json();
-  } catch (e) {
-    throw new Error('Google Drive ตอบกลับไม่ถูกต้อง');
-  }
-  if (!result.success || !result.url) {
-    throw new Error(result.error || 'อัปโหลดไป Google Drive ไม่สำเร็จ');
-  }
-  return result.url;
+// Room-scoped uploads (homework images/documents) are filed under a per-classroom
+// subfolder on the Drive side; shared uploads (teacher avatars, subject icons) pass
+// an empty roomFolder so they land in a folder shared across every classroom.
+function getRoomFolder() {
+  return state.classroom ? `ม.${state.classroom.grade_level}-${state.classroom.room_number}` : '';
 }
 
-async function uploadImage(file, folder, opts) {
-  const blob = await compressImage(file, opts);
-  const fileName = `${folder}_${Date.now()}_${Math.random().toString(36).slice(2,7)}.jpg`;
-  return uploadToGoogleDrive(blob, fileName);
-}
-
-// Dual pipeline: images are compressed client-side before upload (see uploadImage
-// above); documents (PDF/Word/PPTX/XLSX/ZIP) are sent as-is, capped at 15MB, and
-// return the full Apps Script response so callers can save url/downloadUrl/fileName.
-async function uploadFileToGoogleDrive(file, { isImage = false, maxDim = 1200, quality = 0.75 } = {}) {
+// Dual pipeline: images are compressed client-side before upload; documents
+// (PDF/Word/PPTX/XLSX/ZIP) are sent as-is, capped at 15MB. category and roomFolder
+// tell the Apps Script which subfolder to file the upload under. Returns the full
+// Apps Script response so callers can save url/downloadUrl/fileName as needed.
+async function uploadFileToGoogleDrive(file, { isImage = false, maxDim = 1200, quality = 0.75, maxBytes = 250 * 1024, category = '', roomFolder = '' } = {}) {
   if (!GOOGLE_DRIVE_SCRIPT_URL || GOOGLE_DRIVE_SCRIPT_URL.includes('YOUR_GOOGLE_APPS_SCRIPT')) {
-    throw new Error('กรุณาระบุ GOOGLE_DRIVE_SCRIPT_URL ในโค้ดก่อนทำการอัปโหลด');
+    throw new Error('กรุณาตั้งค่า GOOGLE_DRIVE_SCRIPT_URL ก่อนอัปโหลดไฟล์');
   }
   let base64Data = '';
   let mimeType = file.type || 'application/octet-stream';
+  let fileName = file.name || `file_${Date.now()}`;
 
   if (isImage && file.type.startsWith('image/')) {
-    const blob = await compressImage(file, { maxDim, quality, maxBytes: 250 * 1024 });
+    const blob = await compressImage(file, { maxDim, quality, maxBytes });
     base64Data = await fileToBase64(blob);
     mimeType = 'image/jpeg';
   } else {
@@ -384,7 +349,7 @@ async function uploadFileToGoogleDrive(file, { isImage = false, maxDim = 1200, q
     response = await fetch(GOOGLE_DRIVE_SCRIPT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ base64Data, mimeType, fileName: file.name })
+      body: JSON.stringify({ base64Data, mimeType, fileName, category, roomFolder })
     });
   } catch (e) {
     throw new Error('เชื่อมต่อ Google Drive ไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่');
@@ -399,6 +364,23 @@ async function uploadFileToGoogleDrive(file, { isImage = false, maxDim = 1200, q
     throw new Error(result.error || 'เกิดข้อผิดพลาดในการอัปโหลดไฟล์ไป Google Drive');
   }
   return result; // { url, downloadUrl, fileId, fileName, mimeType }
+}
+
+// folder ∈ 'teachers' | 'subjects' | 'assignments' — maps to the matching Drive
+// category, and to a room subfolder for assignment images only (teacher/subject
+// media is shared across classrooms so it stays in the shared folder).
+const UPLOAD_CATEGORY = {
+  teachers: 'รูปครูผู้สอน',
+  subjects: 'ไอคอนวิชา',
+  assignments: 'การบ้านและชีทเรียน',
+};
+const UPLOAD_IS_ROOM_SCOPED = { assignments: true };
+
+async function uploadImage(file, folder, opts) {
+  const category = UPLOAD_CATEGORY[folder] || '';
+  const roomFolder = UPLOAD_IS_ROOM_SCOPED[folder] ? getRoomFolder() : '';
+  const result = await uploadFileToGoogleDrive(file, { isImage: true, ...opts, category, roomFolder });
+  return result.url;
 }
 
 function formatFileSize(bytes) {
@@ -1266,7 +1248,7 @@ function renderAssignmentForm() {
         if (df.size > 15 * 1024 * 1024) { toast('ไฟล์แนบมีขนาดเกิน 15 MB', 'error'); return; }
         label.textContent = 'กำลังอัปโหลดไฟล์แนบ...';
         try {
-          const res = await uploadFileToGoogleDrive(df, { isImage: false });
+          const res = await uploadFileToGoogleDrive(df, { isImage: false, category: 'เอกสารดาวน์โหลด', roomFolder: getRoomFolder() });
           file_url = res.downloadUrl || res.url;
           file_name = res.fileName || df.name;
           file_size_label = formatFileSize(df.size);
