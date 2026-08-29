@@ -691,7 +691,7 @@ function renderSubjectManager() {
   });
 }
 
-// ----- Timetable OCR scanner (Gemini Vision) with deduplication -----
+// ----- Timetable OCR scanner (Gemini 3.7 Flash & 3.5 Flash-Lite) -----
 function renderOcrScanner() {
   const key = localStorage.getItem(LS.geminiKey) || '';
   document.getElementById('modal-root').innerHTML = modalShell(`
@@ -742,20 +742,28 @@ function renderOcrScanner() {
     resultEl.innerHTML = `
       <div class="flex items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400 py-6">
         <div class="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
-        กำลังอ่านตารางเรียนและตัดวิชาที่ซ้ำออก...
+        <span id="ocr-status-text">กำลังประมวลผลรูปภาพและตัดวิชาซ้ำ...</span>
       </div>`;
 
+    // ใช้ 2 โมเดล: 3.7 Flash เป็นหลัก และ 3.5 Flash-Lite เป็นตัวสำรอง
+    const MODELS = [
+      'gemini-3.7-flash',
+      'gemini-3.5-flash-lite'
+    ];
+
     try {
-      const base64 = await fileToBase64(file);
-      const prompt = `You are an expert OCR parser for Thai high school weekly timetables (ตารางเรียน).
-Analyze the timetable image and extract all UNIQUE academic subjects taught during the week.
+      const compressedBlob = await compressImage(file, { maxDim: 1400, quality: 0.75 });
+      const base64 = await fileToBase64(compressedBlob);
+
+      const prompt = `You are an expert OCR parser for Thai secondary school weekly timetables (ตารางเรียน ม.1 - ม.6).
+Extract all unique academic subject-teacher pairs taught during the week.
 
 Rules:
-1. Deduplication is MANDATORY: Each subject must appear ONLY ONCE in the list, even if it is scheduled multiple times across different days or periods.
-2. Ignore non-academic activities: "กิจกรรม", "ที่ปรึกษา", "หน้าเสาธง", "โฮมรูม", "คุณธรรม", "ชุมนุม", "แนะแนว", "ลส/ยว/รด", "จิตอาสา", or lunch breaks.
-3. Clean teacher names: retain "ครู" prefix (e.g. ครูศิวาพร, ครูอรรถพล).
-4. Output strictly a JSON array without markdown formatting or code blocks.
-Format:
+1. Deduplication Rule: A course slot is only considered a duplicate if BOTH 'subject_code' AND 'teacher_name' are identical. If the same subject code is taught by different teachers, extract both entries.
+2. Exclude non-academic activities: "กิจกรรม", "ที่ปรึกษา", "หน้าเสาธง", "โฮมรูม", "คุณธรรม", "ชุมนุม", "แนะแนว", "ลูกเสือ", "รด.", "จิตอาสา", or lunch breaks.
+3. Clean course codes: remove classroom/building numbers (e.g. 545, BL, ML, CL).
+4. Clean teacher names: retain "ครู" or "Teacher" prefix.
+5. Output strictly a JSON array of objects:
 [
   {
     "subject_code": "ค32101",
@@ -764,40 +772,68 @@ Format:
   }
 ]`;
 
-      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [
-            { text: prompt },
-            { inline_data: { mime_type: file.type || 'image/jpeg', data: base64 } }
-          ]}]
-        })
-      });
+      let parsedItems = null;
+      let lastError = null;
 
-      const json = await resp.json();
-      if (json.error) throw new Error(json.error.message || 'Gemini API error');
+      for (const model of MODELS) {
+        try {
+          const statusText = document.getElementById('ocr-status-text');
+          if (statusText) statusText.textContent = `กำลังสแกนผ่าน AI (${model})...`;
 
-      let text = json.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '[]';
-      text = text.replace(/```json|```/g, '').trim();
+          const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [
+                { text: prompt },
+                { inline_data: { mime_type: 'image/jpeg', data: base64 } }
+              ]}],
+              generationConfig: {
+                response_mime_type: "application/json",
+                temperature: 0.1
+              }
+            })
+          });
 
-      let items;
-      try { items = JSON.parse(text); } catch (e) { throw new Error('อ่านผลลัพธ์ไม่สำเร็จ ลองรูปที่ชัดขึ้น'); }
-      if (!Array.isArray(items) || !items.length) throw new Error('ไม่พบรายวิชาในรูปภาพนี้');
+          const json = await resp.json();
+          if (json.error) throw new Error(json.error.message || `Error with ${model}`);
 
-      // Secondary client-side deduplication safeguard, in case the model
-      // still returns a subject more than once across the week's periods.
-      const seen = new Set();
-      const uniqueItems = [];
-      for (const item of items) {
-        const code = (item.subject_code || '').trim();
-        if (code && !seen.has(code)) {
-          seen.add(code);
-          uniqueItems.push(item);
+          const text = json.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+          const items = JSON.parse(text);
+
+          if (Array.isArray(items) && items.length > 0) {
+            parsedItems = items;
+            break;
+          }
+        } catch (err) {
+          console.warn(`Model ${model} failed, trying fallback:`, err);
+          lastError = err;
+          await new Promise(r => setTimeout(r, 1000));
         }
       }
-      if (!uniqueItems.length) throw new Error('ไม่พบรหัสวิชาที่อ่านได้ในรูปภาพนี้');
 
+      if (!parsedItems) {
+        throw lastError || new Error('ไม่สามารถประมวลผลตารางเรียนได้ กรุณาลองใช้รูปที่ชัดเจนขึ้น');
+      }
+
+      // ระบบตัดวิชาซ้ำรอบที่สอง (รหัสวิชา + ครู)
+      const seen = new Set();
+      const uniqueItems = [];
+      for (const item of parsedItems) {
+        const code = (item.subject_code || '').trim();
+        const teacher = (item.teacher_name || '').trim();
+        const key = `${code.toLowerCase()}__${teacher.toLowerCase()}`;
+        if (code && !seen.has(key)) {
+          seen.add(key);
+          uniqueItems.push({
+            subject_code: code,
+            subject_name: (item.subject_name || '').trim(),
+            teacher_name: teacher
+          });
+        }
+      }
+
+      if (!uniqueItems.length) throw new Error('ไม่พบรายวิชาที่อ่านได้ในรูปภาพนี้');
       renderOcrPreview(uniqueItems);
     } catch (err) {
       console.error(err);
