@@ -2,40 +2,15 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="referrer" content="no-referrer">
-<title>ห้องนี้มีการบ้าน — Classroom Homework Tracking Hub</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ห้องนี้มีการบ้าน — Classroom Homework Hub</title>
 
-<!-- Mobile PWA meta -->
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="ห้องนี้มีการบ้าน">
-<meta name="theme-color" content="#3a6cf5">
-
-<!-- Open Graph -->
-<meta property="og:title" content="ห้องนี้มีการบ้าน — Classroom Homework Tracking Hub">
-<meta property="og:description" content="ติดตามการบ้านและเอกสารประจำห้องเรียน ม.1 - ม.6 พร้อมแจ้งเตือนกำหนดส่งแบบเรียลไทม์">
-<meta property="og:type" content="website">
-
-<!-- Apply saved theme before first paint to avoid a light->dark flash -->
-<script>
-(function () {
-  try {
-    var t = localStorage.getItem('chtk_theme');
-    var wantsDark = t === 'dark' || (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    if (wantsDark) document.documentElement.classList.add('dark');
-  } catch (e) {}
-})();
-</script>
-
+<!-- Pinned CDN dependencies (Strict Security & SRI ready) -->
+<script src="https://cdn.tailwindcss.com/3.4.10"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://unpkg.com/lucide@0.462.0/dist/umd/lucide.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <script>
   tailwind.config = {
@@ -43,1864 +18,1071 @@
     theme: {
       extend: {
         fontFamily: {
-          thai: ['"Noto Sans Thai"', 'Inter', 'sans-serif'],
-          num: ['Inter', '"Noto Sans Thai"', 'sans-serif'],
+          display: ['Prompt', 'Noto Sans Thai', 'sans-serif'],
+          body: ['Noto Sans Thai', 'Prompt', 'sans-serif'],
         },
         colors: {
           brand: {
-            50: '#eef4ff', 100: '#dee8ff', 200: '#b9cfff', 300: '#8bb0ff',
-            400: '#5c8dff', 500: '#3a6cf5', 600: '#2a52d6', 700: '#233fac',
-            800: '#1f3689', 900: '#1c2f6e',
-          },
-        },
-        boxShadow: {
-          card: '0 1px 2px rgba(15,23,42,0.04), 0 1px 12px rgba(15,23,42,0.06)',
-          pop: '0 8px 30px rgba(15,23,42,0.16)',
-        },
-        borderRadius: { xl2: '1.25rem' },
+            50:'#eef7ff',100:'#d9edff',200:'#bce0ff',300:'#8ecdff',400:'#59b0ff',
+            500:'#2f8fff',600:'#1a6ff5',700:'#1558e0',800:'#1848b4',900:'#193f8d'
+          }
+        }
       }
     }
   }
 </script>
 
 <style>
-  html, body { font-family: 'Noto Sans Thai', 'Inter', sans-serif; }
-  .num { font-family: 'Inter', 'Noto Sans Thai', sans-serif; font-variant-numeric: tabular-nums; }
+  html, body { font-family: 'Noto Sans Thai', 'Prompt', sans-serif; }
+  .font-display { font-family: 'Prompt', 'Noto Sans Thai', sans-serif; }
   ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
-  .dark ::-webkit-scrollbar-thumb { background: #334155; }
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-  .fade-in { animation: fadeIn .18s ease-out; }
-  @keyframes fadeIn { from { opacity:0; transform: translateY(4px);} to {opacity:1; transform: translateY(0);} }
-  .rise-in { animation: riseIn .22s cubic-bezier(.2,.8,.2,1); }
-  @keyframes riseIn { from { opacity:0; transform: translateY(16px);} to {opacity:1; transform: translateY(0);} }
-  .skeleton { background: linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 37%,#e2e8f0 63%); background-size: 400% 100%; animation: sk 1.4s ease infinite; }
-  .dark .skeleton { background: linear-gradient(90deg,#1e293b 25%,#334155 37%,#1e293b 63%); background-size: 400% 100%; }
-  @keyframes sk { 0%{background-position:100% 50%} 100%{background-position:0 50%} }
-  .line-clamp-2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-  .line-clamp-3 { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
-  .spin { animation: spin 0.8s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  ::-webkit-scrollbar-thumb { background: rgba(120,120,120,.4); border-radius: 8px; }
+
+  @keyframes modalIn { from { opacity:0; transform: translateY(24px) scale(.98);} to { opacity:1; transform: translateY(0) scale(1);} }
+  .modal-panel { animation: modalIn .22s ease-out; }
+
+  @keyframes fabPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(124,58,237,.35);} 50% { box-shadow: 0 0 0 10px rgba(124,58,237,0);} }
+  .fab-pulse { animation: fabPulse 2.4s ease-in-out infinite; }
+
+  .safe-top { padding-top: env(safe-area-inset-top, 0px); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+  .drag-indicator { width: 40px; height: 5px; border-radius: 999px; background: rgba(148,163,184,.5); margin: 8px auto 2px; }
+
+  .task-card { transition: transform .15s ease, box-shadow .15s ease; }
+  .task-card:hover { transform: translateY(-2px); }
+
+  .lockout-shake { animation: shake .4s; }
+  @keyframes shake { 10%,90%{transform:translateX(-1px)} 20%,80%{transform:translateX(2px)} 30%,50%,70%{transform:translateX(-4px)} 40%,60%{transform:translateX(4px)} }
+
+  a.linkified { color: #1a6ff5; text-decoration: underline; text-underline-offset: 2px; word-break: break-word; font-weight: 600; }
+  .dark a.linkified { color: #8ecdff; }
+
+  .chip { display:inline-flex; align-items:center; gap:4px; }
 </style>
 </head>
-<body class="min-h-screen font-thai bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors">
 
-<div id="toast-root" class="fixed top-3 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-2 items-center w-full px-4 pointer-events-none"></div>
-<div id="modal-root"></div>
-<div id="app" class="max-w-xl mx-auto min-h-screen bg-slate-100 dark:bg-slate-950 pb-24 transition-colors"></div>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen">
+
+<!-- ============================= TOP NAV ============================= -->
+<header class="safe-top sticky top-0 z-30 backdrop-blur bg-white/85 dark:bg-slate-950/85 border-b border-slate-200 dark:border-slate-800">
+  <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+    <div class="flex items-center gap-2 min-w-0">
+      <div class="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shrink-0 shadow-sm">
+        <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+      </div>
+      <div class="min-w-0 cursor-pointer" id="btnChangeRoom">
+        <h1 class="font-display font-bold text-base leading-tight truncate">ห้องนี้มีการบ้าน</h1>
+        <p id="roomLabel" class="text-[11px] text-brand-600 dark:text-brand-400 font-semibold leading-tight truncate">กำลังเลือกห้องเรียน...</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-1.5 shrink-0">
+      <button id="btnLineShare" title="แชร์ผ่าน LINE"
+        class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-white text-xs font-semibold shadow-sm transition active:scale-95">
+        <i data-lucide="share-2" class="w-4 h-4"></i> แชร์ห้อง LINE
+      </button>
+      <button id="btnLineBot" title="ดึงบอทเข้ากลุ่ม LINE"
+        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition active:scale-95">
+        <i data-lucide="bot" class="w-4 h-4"></i>
+        <span class="hidden sm:inline">ดึงบอทเข้ากลุ่ม LINE</span>
+      </button>
+      <button id="btnDarkToggle" title="สลับธีมสี" class="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition active:scale-95">
+        <i data-lucide="sun-moon" class="w-4 h-4"></i>
+      </button>
+      <button id="btnRepMode" title="โหมดตัวแทนห้อง" class="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition active:scale-95">
+        <i data-lucide="shield-check" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 pb-32">
+
+  <!-- Workload analytics -->
+  <section class="mt-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="font-display font-semibold text-sm flex items-center gap-1.5">
+        <i data-lucide="bar-chart-3" class="w-4 h-4 text-brand-600"></i> ภาระงานรายสัปดาห์
+      </h2>
+      <span id="workloadAlert" class="hidden text-[11px] px-2 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 chip font-medium">
+        <i data-lucide="alert-triangle" class="w-3 h-3"></i> สัปดาห์นี้งานเยอะเป็นพิเศษ
+      </span>
+    </div>
+    <canvas id="workloadChart" height="120"></canvas>
+  </section>
+
+  <!-- Subject filter chips -->
+  <section class="mt-4 flex items-center gap-2 overflow-x-auto pb-1" id="subjectChips"></section>
+
+  <!-- Task list -->
+  <section id="taskList" class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3"></section>
+
+  <div id="emptyState" class="hidden text-center py-16 text-slate-400">
+    <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2 text-slate-300 dark:text-slate-600"></i>
+    <p class="text-sm font-medium">ยังไม่มีการบ้านในห้องนี้</p>
+    <p class="text-xs mt-1 text-slate-400">เข้าสู่โหมดตัวแทนห้องเพื่อเริ่มเพิ่มการบ้าน</p>
+  </div>
+</main>
+
+<!-- ============================= FABs (Representative mode only) ============================= -->
+<div id="fabWrap" class="hidden fixed bottom-6 right-5 z-40 flex flex-col items-end gap-3 safe-bottom">
+  <button id="fabCamera" title="AI สแกนการบ้าน" class="fab-pulse w-14 h-14 rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-600/30 flex items-center justify-center transition active:scale-95">
+    <i data-lucide="camera" class="w-6 h-6"></i>
+  </button>
+  <button id="fabPlus" title="เพิ่มการบ้านใหม่" class="w-14 h-14 rounded-full bg-brand-600 hover:bg-brand-700 text-white shadow-lg shadow-brand-600/30 flex items-center justify-center transition active:scale-95">
+    <i data-lucide="plus" class="w-6 h-6"></i>
+  </button>
+  <input id="cameraInput" type="file" accept="image/*" capture="environment" class="hidden">
+  <input id="timetableInput" type="file" accept="image/*" capture="environment" multiple class="hidden">
+</div>
+
+<!-- ============================= CLASSROOM PICKER ============================= -->
+<div id="pickerOverlay" class="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4">
+  <div class="modal-panel bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-5 safe-bottom border border-slate-200 dark:border-slate-800 shadow-2xl">
+    <div class="drag-indicator sm:hidden"></div>
+    <h2 class="font-display font-bold text-lg mb-1 flex items-center gap-2"><i data-lucide="school" class="w-5 h-5 text-brand-600"></i> เลือกห้องเรียน</h2>
+    <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">เลือกระดับชั้นและห้องของคุณเพื่อเริ่มใช้งาน</p>
+
+    <label class="text-xs font-semibold text-slate-500">ระดับชั้น</label>
+    <select id="pickGrade" class="w-full mt-1 mb-3 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-brand-500"></select>
+
+    <label class="text-xs font-semibold text-slate-500">ห้องเรียน</label>
+    <select id="pickRoom" class="w-full mt-1 mb-4 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-brand-500"></select>
+
+    <button id="btnEnterRoom" class="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold flex items-center justify-center gap-2 shadow-sm transition active:scale-95">
+      <i data-lucide="log-in" class="w-4 h-4"></i> เข้าสู่ห้องเรียน
+    </button>
+    <p id="pickerError" class="hidden text-xs text-rose-600 mt-2 text-center font-medium"></p>
+  </div>
+</div>
+
+<!-- ============================= PASSCODE GATE ============================= -->
+<div id="passcodeOverlay" class="hidden fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4">
+  <div class="modal-panel bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-5 safe-bottom border border-slate-200 dark:border-slate-800 shadow-2xl">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="lock" class="w-5 h-5 text-brand-600"></i> รหัสตัวแทนห้อง</h2>
+      <button data-close="passcodeOverlay" class="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">กรอกรหัสผ่านเพื่อปลดล็อกสิทธิ์เพิ่ม/แก้ไขการบ้าน</p>
+    <input id="passcodeInput" type="password" inputmode="numeric" placeholder="รหัสผ่านห้อง"
+      class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-brand-500 tracking-widest text-center font-bold">
+    <p id="passcodeStatus" class="text-xs text-rose-600 mt-2 min-h-[16px] text-center font-medium"></p>
+    <button id="btnPasscodeSubmit" class="w-full mt-2 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold transition active:scale-95">ยืนยันรหัสผ่าน</button>
+  </div>
+</div>
+
+<!-- ============================= TASK MODAL (Add/Edit) ============================= -->
+<div id="taskModalOverlay" class="hidden fixed inset-0 z-50 bg-slate-950/60 flex items-end sm:items-center justify-center">
+  <div class="modal-panel bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[92vh] overflow-y-auto safe-bottom border border-slate-200 dark:border-slate-800 shadow-2xl">
+    <div class="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur safe-top z-10 border-b border-slate-100 dark:border-slate-800">
+      <div class="drag-indicator sm:hidden"></div>
+      <div class="flex items-center justify-between px-5 py-3">
+        <h2 id="taskModalTitle" class="font-display font-bold text-base">เพิ่มการบ้าน</h2>
+        <button data-close="taskModalOverlay" class="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+
+    <form id="taskForm" class="p-5 space-y-3">
+      <input type="hidden" id="taskId">
+
+      <div>
+        <label class="text-xs font-semibold text-slate-500">วิชา</label>
+        <select id="taskSubject" required class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-medium"></select>
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold text-slate-500">หัวข้องาน / ชื่องาน</label>
+        <input id="taskTitle" required class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" placeholder="เช่น แบบฝึกหัดบทที่ 3 หน้า 45">
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold text-slate-500">รายละเอียดคำสั่งงาน (ลิงก์จะกดเปิดได้อัตโนมัติ)</label>
+        <textarea id="taskDesc" rows="3" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" placeholder="คำสั่งงานเพิ่มเติม, ลิงก์ Google Forms, YouTube ฯลฯ"></textarea>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold text-slate-500">ประเภทงาน</label>
+          <select id="taskType" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+            <option value="INDIVIDUAL">งานเดี่ยว</option>
+            <option value="GROUP">งานกลุ่ม</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-500">กำหนดส่ง</label>
+          <input id="taskDue" type="datetime-local" class="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs">
+        </div>
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold text-slate-500">ภาระงานโดยประมาณ (นาที)</label>
+        <input id="taskWorkload" type="number" min="5" step="5" value="20" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold text-slate-500">รูปภาพประกอบ (หลายรูปได้)</label>
+        <input id="taskImages" type="file" accept="image/png,image/jpeg,image/webp" multiple
+          class="w-full mt-1 text-xs file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-brand-100 file:text-brand-700 dark:file:bg-brand-900/40 dark:file:text-brand-300">
+        <div id="taskImagePreview" class="flex gap-2 flex-wrap mt-2"></div>
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold text-slate-500">ไฟล์เอกสารแนบ (PDF, Word, PPTX, ZIP — ไม่เกิน 15MB)</label>
+        <input id="taskAttachments" type="file" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip"
+          class="w-full mt-1 text-xs file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-slate-200 file:text-slate-700 dark:file:bg-slate-700 dark:file:text-slate-200">
+        <div id="taskAttachmentList" class="text-xs mt-1 space-y-1"></div>
+      </div>
+
+      <button type="submit" class="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold flex items-center justify-center gap-2 shadow-sm transition active:scale-95">
+        <i data-lucide="save" class="w-4 h-4"></i> บันทึกข้อมูลการบ้าน
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ============================= AI REVIEW MODAL ============================= -->
+<div id="aiReviewOverlay" class="hidden fixed inset-0 z-50 bg-slate-950/60 flex items-end sm:items-center justify-center">
+  <div class="modal-panel bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm max-h-[92vh] overflow-y-auto safe-bottom border border-slate-200 dark:border-slate-800 shadow-2xl">
+    <div class="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur safe-top z-10 border-b border-slate-100 dark:border-slate-800">
+      <div class="drag-indicator sm:hidden"></div>
+      <div class="flex items-center justify-between px-5 py-3">
+        <h2 class="font-display font-bold text-base flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-600"></i> AI สแกนการบ้าน</h2>
+        <button data-close="aiReviewOverlay" class="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+    <div class="p-5 space-y-3">
+      <img id="aiReviewImg" class="w-full h-48 object-cover rounded-xl border border-slate-200 dark:border-slate-700" alt="ภาพที่ถ่าย">
+      <div id="aiReviewStatus" class="text-xs text-slate-500 flex items-center gap-2 font-medium">
+        <i data-lucide="loader-circle" class="w-4 h-4 animate-spin text-violet-600"></i> กำลังวิเคราะห์รูปภาพด้วย AI...
+      </div>
+      <div id="aiReviewFields" class="hidden space-y-2">
+        <div>
+          <label class="text-xs font-semibold text-slate-500">วิชาที่ตรวจพบ</label>
+          <select id="aiSubject" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"></select>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-500">หัวข้องาน</label>
+          <input id="aiTitle" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-medium">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-500">รายละเอียด</label>
+          <textarea id="aiDesc" rows="3" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"></textarea>
+        </div>
+        <button id="btnAiUseData" class="w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold flex items-center justify-center gap-2 shadow-sm transition active:scale-95">
+          <i data-lucide="check" class="w-4 h-4"></i> นำข้อมูลไปสร้างการบ้าน
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= LIGHTBOX ============================= -->
+<div id="lightboxOverlay" class="hidden fixed inset-0 z-[60] bg-black/90 flex items-center justify-center">
+  <button id="lightboxClose" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center">
+    <i data-lucide="x" class="w-5 h-5"></i>
+  </button>
+  <button id="lightboxPrev" class="absolute left-2 sm:left-6 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center">
+    <i data-lucide="chevron-left" class="w-6 h-6"></i>
+  </button>
+  <button id="lightboxNext" class="absolute right-2 sm:right-6 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center">
+    <i data-lucide="chevron-right" class="w-6 h-6"></i>
+  </button>
+  <img id="lightboxImg" class="max-w-[92vw] max-h-[86vh] object-contain rounded-lg" alt="ภาพขยาย">
+</div>
+
+<div id="toast" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-[70] bg-slate-900/95 text-white text-xs px-4 py-2.5 rounded-full shadow-2xl font-medium backdrop-blur"></div>
 
 <script>
-/* ============================================================================
-   ห้องนี้มีการบ้าน — Classroom Homework Tracking Hub — single-file app
-   Sections: config/state, supabase client, utils (time/badges/theme/toast),
-   data loading, views (picker, dashboard), modals (rep gate, subject manager,
-   subject form, assignment form, image lightbox), router, boot.
-   ============================================================================ */
-
-// ---------- HARDCODED SUPABASE CONFIG ---------------------------------------
+/* ==============================================================================
+   CONFIGURATION
+   ============================================================================== */
 const SUPABASE_URL = "https://jaqdgehwqqaowzrxabgg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphcWRnZWh3cXFhb3d6cnhhYmdnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5NzIzMTcsImV4cCI6MjEwMzU0ODMxN30.6xiNIP_mmqRWuudWzhSwNPYJoVRvudd-Djbs_lBi090";
+const GOOGLE_DRIVE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz7PfD1Wcal8Dx80Fj4D2cJbP56ez33nYi3j120mCiJ7DK7icg7yRwZZFU_pR8imSuDQQ/exec";
+const LINE_BOT_ID = "@515oqmpb"; // Bot ID จริงจาก LINE Official Account
 
-// Google Drive Web App Upload Endpoint (Google Apps Script) — replaces Supabase Storage
-// for all media uploads (homework images, teacher photos, subject icons).
-const GOOGLE_DRIVE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyDkqxAfc1DkSwadnWHhXI2eBqh0NxQQiXSBmL_x8A4MzMoJ4UhFzKdJFary_xc72RmQw/exec";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// OPTIONAL — Smart Workload persistence migration:
-// The Quick Tag picker in the assignment form (see Section 3.3 of the spec) tries
-// to save `workload_type` / `workload_minutes` alongside each assignment so the
-// override is shared with every student, not just the device that created it.
-// If your `assignments` table doesn't have these columns yet, run once in the
-// Supabase SQL editor:
-//   ALTER TABLE assignments ADD COLUMN IF NOT EXISTS workload_type text;
-//   ALTER TABLE assignments ADD COLUMN IF NOT EXISTS workload_minutes integer;
-// Without this migration the app still works fine — saves simply fall back to
-// omitting those two fields, and every assignment is classified automatically
-// by the keyword engine instead (see classifyAssignment()).
-
-// ---------- STATE ------------------------------------------------------------
-const LS = {
-  classroom: 'chtk_classroom',      // { id, grade_level, room_number }
-  done: 'cht_done_ids',             // array of completed assignment ids
-  repUnlocked: 'cht_rep_unlocked',  // { [classroomId]: true }
-  theme: 'chtk_theme',              // 'light' | 'dark'
-  geminiKey: 'cht_gemini_key',      // Gemini API key, stored locally for OCR scanning
-  smartSort: 'cht_smart_sort',      // '1' | '0' — Smart Priority Sort toggle, remembered per device
-  showWorkload: 'cht_show_workload', // '1' | '0' — Weekly Workload Dashboard visibility, remembered per device
-};
-
-const state = {
-  view: 'boot',              // boot | picker | dashboard
-  supabase: null,
-  classroom: null,           // {id, grade_level, room_number}
-  subjects: [],
-  assignments: [],
-  filter: 'all',              // all | pending | done
-  search: '',
-  subjectFilter: 'all',
-  doneIds: new Set(),
-  repMode: false,
-  loading: false,
-  editingAssignment: null,
-  editingSubject: null,
-  smartSort: false,          // Smart Priority Sort toggle (§3.2)
-  showWorkload: false,       // Weekly Workload Dashboard visibility — collapsed by default
-  expandedDescriptions: new Set(), // ids of homework cards with "ดูเพิ่มเติม" expanded (session-only)
-};
-
-function loadLocal() {
-  try { state.doneIds = new Set(JSON.parse(localStorage.getItem(LS.done) || '[]')); } catch(e) { state.doneIds = new Set(); }
-  try { state.classroom = JSON.parse(localStorage.getItem(LS.classroom) || 'null'); } catch(e) { state.classroom = null; }
-  try { state.smartSort = localStorage.getItem(LS.smartSort) === '1'; } catch(e) { state.smartSort = false; }
-  try { state.showWorkload = localStorage.getItem(LS.showWorkload) === '1'; } catch(e) { state.showWorkload = false; }
-}
-function saveDone() { localStorage.setItem(LS.done, JSON.stringify([...state.doneIds])); }
-
-function isRepUnlocked(classroomId) {
+/* ==============================================================================
+   SECURITY: Strict Anti-XSS and URL Sanitization
+   ============================================================================== */
+function safeUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
   try {
-    const m = JSON.parse(localStorage.getItem(LS.repUnlocked) || '{}');
-    return !!m[classroomId];
-  } catch(e) { return false; }
-}
-function setRepUnlocked(classroomId) {
-  let m = {};
-  try { m = JSON.parse(localStorage.getItem(LS.repUnlocked) || '{}'); } catch(e) {}
-  m[classroomId] = true;
-  localStorage.setItem(LS.repUnlocked, JSON.stringify(m));
+    if (/^\/(?!\/)/.test(trimmed)) return trimmed;
+    const lower = trimmed.toLowerCase();
+    if (lower.startsWith('http://') || lower.startsWith('https://') || lower.startsWith('blob:')) {
+      const u = new URL(trimmed, window.location.href);
+      if (u.protocol === 'http:' || u.protocol === 'https:' || u.protocol === 'blob:') return trimmed;
+      return '';
+    }
+    if (lower.startsWith('data:image/')) {
+      if (/^data:image\/(png|jpeg|webp|gif);base64,/i.test(trimmed)) return trimmed;
+      return '';
+    }
+    return '';
+  } catch (e) { return ''; }
 }
 
-// ---------- SUPABASE ----------------------------------------------------------
-function initSupabase() {
-  const sdk = (typeof window !== 'undefined' && window.supabase) ? window.supabase : (typeof supabase !== 'undefined' ? supabase : null);
-  if (!sdk || typeof sdk.createClient !== 'function') {
-    console.error('Supabase SDK not available — check that the CDN script tag loaded.');
-    return null;
+function esc(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function linkifyText(text) {
+  const escaped = esc(text || '');
+  const urlPattern = /((https?:\/\/)[^\s<]+)/gi;
+  return escaped.replace(urlPattern, (match) => {
+    const clean = safeUrl(match.replace(/[),.;]+$/, ''));
+    if (!clean) return match;
+    const trailing = match.slice(clean.length);
+    return `<a href="${esc(clean)}" target="_blank" rel="noopener noreferrer" class="linkified">${clean}</a>${esc(trailing)}`;
+  }).replaceAll('\n', '<br>');
+}
+
+/* ==============================================================================
+   SECURITY: Passcode Rate Limiting
+   ============================================================================== */
+const PASSCODE_ATTEMPTS_KEY = 'cht_passcode_attempts';
+const PASSCODE_LOCKOUT_KEY = 'cht_passcode_lockout_until';
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MS = 60 * 1000;
+let lockoutTimer = null;
+
+function getAttempts() { return parseInt(localStorage.getItem(PASSCODE_ATTEMPTS_KEY) || '0', 10); }
+function setAttempts(n) { localStorage.setItem(PASSCODE_ATTEMPTS_KEY, String(n)); }
+function getLockoutUntil() { return parseInt(localStorage.getItem(PASSCODE_LOCKOUT_KEY) || '0', 10); }
+function setLockoutUntil(ts) { localStorage.setItem(PASSCODE_LOCKOUT_KEY, String(ts)); }
+
+function checkLockoutState() {
+  const until = getLockoutUntil();
+  const remaining = until - Date.now();
+  const submitBtn = document.getElementById('btnPasscodeSubmit');
+  const input = document.getElementById('passcodeInput');
+  const status = document.getElementById('passcodeStatus');
+
+  if (remaining > 0) {
+    submitBtn.disabled = true;
+    input.disabled = true;
+    submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    clearInterval(lockoutTimer);
+    lockoutTimer = setInterval(() => {
+      const secLeft = Math.ceil((getLockoutUntil() - Date.now()) / 1000);
+      if (secLeft <= 0) {
+        clearInterval(lockoutTimer);
+        setAttempts(0);
+        setLockoutUntil(0);
+        submitBtn.disabled = false;
+        input.disabled = false;
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        status.textContent = '';
+      } else {
+        status.textContent = `กรอกรหัสผิดเกินกำหนด กรุณารอ ${secLeft} วินาที`;
+      }
+    }, 250);
+    return true;
   }
-  try {
-    state.supabase = sdk.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    return state.supabase;
-  } catch (e) {
-    console.error('Failed to create Supabase client:', e);
-    state.supabase = null;
-    return null;
-  }
+  submitBtn.disabled = false;
+  input.disabled = false;
+  submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+  return false;
 }
 
-// Lazily guarantees a Supabase client exists before any DB call, retrying
-// initialization once if the CDN script was still loading. Surfaces a toast
-// instead of letting a `null.from(...)` TypeError crash a click handler.
-async function ensureSupabase() {
-  if (state.supabase) return state.supabase;
-  initSupabase();
-  if (state.supabase) return state.supabase;
-  toast('เชื่อมต่อฐานข้อมูลไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่', 'error');
-  return null;
-}
+async function submitPasscode() {
+  if (checkLockoutState()) return;
+  const val = document.getElementById('passcodeInput').value.trim();
+  const status = document.getElementById('passcodeStatus');
 
-// ---------- THEME ----------------------------------------------------------
-function isDarkMode() { return document.documentElement.classList.contains('dark'); }
-function toggleTheme() {
-  const html = document.documentElement;
-  const dark = html.classList.toggle('dark');
-  try { localStorage.setItem(LS.theme, dark ? 'dark' : 'light'); } catch(e) {}
-  render();
-}
+  if (!val) { status.textContent = 'กรุณากรอกรหัสผ่าน'; return; }
 
-// ---------- UTILS ----------------------------------------------------------
-function esc(s) {
-  if (s === null || s === undefined) return '';
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
+  // ยืนยันรหัสผ่านผ่าน Supabase RPC
+  const { data: isValid, error } = await supabase.rpc('verify_classroom_passcode', {
+    p_classroom_id: state.room.id,
+    p_passcode: val
+  });
 
-const GRADE_TH = { 1:'ม.1', 2:'ม.2', 3:'ม.3', 4:'ม.4', 5:'ม.5', 6:'ม.6' };
+  if (isValid === true) {
+    setAttempts(0);
+    setLockoutUntil(0);
+    state.isRep = true;
+    sessionStorage.setItem('cht_is_rep', '1');
+    document.getElementById('fabWrap').classList.remove('hidden');
+    closeModal('passcodeOverlay');
+    renderTasks();
+    toast('เข้าสู่โหมดตัวแทนห้องสำเร็จ');
+  } else {
+    const attempts = getAttempts() + 1;
+    setAttempts(attempts);
+    const panel = document.querySelector('#passcodeOverlay .modal-panel');
+    panel.classList.add('lockout-shake');
+    setTimeout(() => panel.classList.remove('lockout-shake'), 400);
 
-const SUBJECT_PALETTE = [
-  { bg:'bg-blue-50 dark:bg-blue-500/10',       text:'text-blue-700 dark:text-blue-400',       dot:'bg-blue-500' },
-  { bg:'bg-violet-50 dark:bg-violet-500/10',   text:'text-violet-700 dark:text-violet-400',   dot:'bg-violet-500' },
-  { bg:'bg-emerald-50 dark:bg-emerald-500/10', text:'text-emerald-700 dark:text-emerald-400', dot:'bg-emerald-500' },
-  { bg:'bg-amber-50 dark:bg-amber-500/10',     text:'text-amber-700 dark:text-amber-400',     dot:'bg-amber-500' },
-  { bg:'bg-rose-50 dark:bg-rose-500/10',       text:'text-rose-700 dark:text-rose-400',       dot:'bg-rose-500' },
-  { bg:'bg-cyan-50 dark:bg-cyan-500/10',       text:'text-cyan-700 dark:text-cyan-400',       dot:'bg-cyan-500' },
-  { bg:'bg-fuchsia-50 dark:bg-fuchsia-500/10', text:'text-fuchsia-700 dark:text-fuchsia-400', dot:'bg-fuchsia-500' },
-  { bg:'bg-lime-50 dark:bg-lime-500/10',       text:'text-lime-700 dark:text-lime-400',       dot:'bg-lime-600' },
-];
-function colorForSubject(code) {
-  let h = 0;
-  for (const c of String(code||'x')) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return SUBJECT_PALETTE[h % SUBJECT_PALETTE.length];
-}
-
-// ----- Thai timezone (Asia/Bangkok) date/time formatting -----
-function bangkokYMD(date) {
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);
-  const o = {};
-  parts.forEach(p => { o[p.type] = p.value; });
-  return Date.UTC(Number(o.year), Number(o.month) - 1, Number(o.day));
-}
-
-function fmtDateTime(dateStr) {
-  const d = new Date(dateStr);
-  const dateFmt = new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', weekday: 'short', day: 'numeric', month: 'short' });
-  const timeFmt = new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
-  return `${dateFmt.format(d)} · ${timeFmt.format(d)} น.`;
-}
-
-// Four-tier countdown status computed against current Thai (Asia/Bangkok) time.
-function dueBadge(dueDateStr) {
-  const due = new Date(dueDateStr);
-  const now = new Date();
-  const diffDays = Math.round((bangkokYMD(due) - bangkokYMD(now)) / 86400000);
-
-  if (due.getTime() < now.getTime()) {
-    return { label: 'เลยกำหนดส่ง', cls: 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20', icon: 'alert-circle' };
-  }
-  if (diffDays <= 0) {
-    return { label: 'ส่งวันนี้', cls: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20', icon: 'alarm-clock' };
-  }
-  if (diffDays === 1) {
-    return { label: 'ส่งพรุ่งนี้', cls: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20', icon: 'clock' };
-  }
-  return { label: `เหลืออีก ${diffDays} วัน`, cls: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20', icon: 'calendar' };
-}
-
-// ============================================================================
-// SMART WORKLOAD & PRIORITY SCHEDULING SYSTEM
-// (ระบบวิเคราะห์ภาระงานและจัดลำดับความเร่งด่วนอัจฉริยะ)
-// ============================================================================
-
-// ---- 2.1 Keyword-based Assignment Classifier --------------------------------
-// Maps a workload tier to its difficulty score (D), estimated minutes (T),
-// and the label/emoji shown on badges.
-const WORKLOAD_PRESETS = {
-  short:  { difficulty: 1, minutes: 20, label: 'งานสั้น',    emoji: '📝' },
-  medium: { difficulty: 2, minutes: 45, label: 'งานปานกลาง', emoji: '📊' },
-  large:  { difficulty: 3, minutes: 90, label: 'งานใหญ่',    emoji: '🎬' },
-};
-// Checked in order large → medium → short: a report/project title often also
-// contains a generic word like "หน้า" or "ข้อ", so the more specific/heavier
-// keyword set should win when several tiers match.
-const WORKLOAD_KEYWORDS = {
-  large:  ['รายงาน','โครงงาน','สไลด์','พรีเซนต์','นำเสนอ','คลิป','วิดีโอ','โมเดล','ประดิษฐ์'],
-  medium: ['ใบงาน','ชีท','สรุป','mind map','ผังความคิด','วาดภาพ','แปล'],
-  short:  ['แบบฝึกหัด','ในสมุด','ตอบคำถาม','หน้า','ข้อ','ตรวจ','ส่งท้ายคาบ'],
-};
-
-// Classifies an assignment into a workload tier (type/difficulty/estimated
-// minutes). A rep-chosen Quick Tag (workload_type on the row) always wins;
-// otherwise the title+description are scanned for keywords; otherwise it
-// falls back to the spec's default (medium difficulty, 30 minutes).
-function classifyAssignment(a) {
-  if (a && a.workload_type && WORKLOAD_PRESETS[a.workload_type]) {
-    const preset = WORKLOAD_PRESETS[a.workload_type];
-    return {
-      type: a.workload_type,
-      difficulty: preset.difficulty,
-      minutes: a.workload_minutes || preset.minutes,
-      label: preset.label,
-      emoji: preset.emoji,
-      source: 'quick-tag',
-    };
-  }
-  const hay = `${a?.title || ''} ${a?.description || ''}`.toLowerCase();
-  for (const type of ['large', 'medium', 'short']) {
-    if (WORKLOAD_KEYWORDS[type].some(kw => hay.includes(kw.toLowerCase()))) {
-      const preset = WORKLOAD_PRESETS[type];
-      return { type, difficulty: preset.difficulty, minutes: preset.minutes, label: preset.label, emoji: preset.emoji, source: 'keyword' };
+    if (attempts >= MAX_ATTEMPTS) {
+      setLockoutUntil(Date.now() + LOCKOUT_MS);
+      checkLockoutState();
+    } else {
+      status.textContent = `รหัสผ่านไม่ถูกต้อง (เหลือโอกาส ${MAX_ATTEMPTS - attempts} ครั้ง)`;
     }
   }
-  // Default when no keyword matches anything: medium difficulty, lighter 30-min estimate.
-  return { type: 'medium', difficulty: 2, minutes: 30, label: 'งานปานกลาง', emoji: '📊', source: 'default' };
 }
 
-// ---- 2.2 Priority Scoring Algorithm -----------------------------------------
-// P = (100 / (hoursRemaining + 1)) * 0.6 + (D * 15) * 0.4 — overdue = 999 (max).
-// Higher P = should be done sooner. Used to power "Smart Priority Sort".
-function priorityScore(a) {
-  const due = new Date(a.due_date);
-  const now = new Date();
-  if (due.getTime() < now.getTime()) return 999;
-  const hoursLeft = (due.getTime() - now.getTime()) / 3600000;
-  const { difficulty } = classifyAssignment(a);
-  const urgencyPart = (100 / (hoursLeft + 1)) * 0.6;
-  const weightPart = (difficulty * 15) * 0.4;
-  return urgencyPart + weightPart;
-}
-// An assignment is flagged 🔥 "ด่วนมาก" when it's not done and either overdue
-// or its priority score has climbed into the top urgency band.
-function isUrgent(a) {
-  return !state.doneIds.has(a.id) && priorityScore(a) >= 75;
-}
+/* ==============================================================================
+   APP STATE & MODALS
+   ============================================================================== */
+const state = {
+  room: null,
+  subjects: [],
+  tasks: [],
+  isRep: sessionStorage.getItem('cht_is_rep') === '1',
+  activeSubjectFilter: null,
+  currentTaskImages: [],
+  currentTaskAttachments: [],
+  lightboxImages: [],
+  lightboxIndex: 0,
+  aiPendingImage: null,
+};
 
-// ---- 2.3 Daily & Weekly Workload Forecaster ---------------------------------
-const WEEKDAY_TH_SHORT = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
-const WEEKDAY_TH_FULL  = ['วันอาทิตย์', 'วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสฯ', 'วันศุกร์', 'วันเสาร์'];
-
-function workloadLevel(totalMinutes) {
-  const hrs = totalMinutes / 60;
-  if (hrs > 3)   return { key: 'red',    label: 'งานหนาแน่น', emoji: '🔴', cls: 'bg-red-500',    chip: 'bg-red-500/10 text-red-600 dark:text-red-400' };
-  if (hrs >= 1.5) return { key: 'yellow', label: 'ปานกลาง',    emoji: '🟡', cls: 'bg-amber-400',  chip: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' };
-  return           { key: 'green',  label: 'งานเบา',      emoji: '🟢', cls: 'bg-emerald-500', chip: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' };
-}
-function minutesLabel(minutes) {
-  if (!minutes || minutes <= 0) return '0 นาที';
-  if (minutes < 60) return `${minutes} นาที`;
-  const hrs = minutes / 60;
-  return `${hrs % 1 === 0 ? hrs.toFixed(0) : hrs.toFixed(1)} ชม.`;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.remove('hidden');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.add('hidden'), 2600);
 }
 
-// Buckets every *pending* assignment due this Mon–Sun (Asia/Bangkok) into its
-// due day, summing each day's estimated minutes for the weekly bar chart.
-function computeWeeklyWorkload() {
-  const pending = state.assignments.filter(a => !state.doneIds.has(a.id));
-  const todayYMD = bangkokYMD(new Date());
-  const todayDow = new Date(todayYMD).getUTCDay(); // 0=Sun..6=Sat
-  const mondayOffset = todayDow === 0 ? -6 : 1 - todayDow;
-  const mondayYMD = todayYMD + mondayOffset * 86400000;
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const dateMs = mondayYMD + i * 86400000;
-    return { dateMs, dow: new Date(dateMs).getUTCDay(), minutes: 0, items: [] };
-  });
+document.querySelectorAll('[data-close]').forEach(btn => {
+  btn.addEventListener('click', () => closeModal(btn.dataset.close));
+});
 
-  pending.forEach(a => {
-    const dueYMD = bangkokYMD(new Date(a.due_date));
-    const day = days.find(d => d.dateMs === dueYMD);
-    if (!day) return; // due outside the current week
-    const cls = classifyAssignment(a);
-    day.minutes += cls.minutes;
-    day.items.push({ ...a, _cls: cls });
-  });
-
-  return days.map(d => ({ ...d, label: WEEKDAY_TH_SHORT[d.dow], level: workloadLevel(d.minutes), isToday: d.dateMs === todayYMD }));
+/* ==============================================================================
+   DARK MODE
+   ============================================================================== */
+function initDarkMode() {
+  const saved = localStorage.getItem('cht_theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (saved === 'dark' || (!saved && prefersDark)) document.documentElement.classList.add('dark');
 }
+initDarkMode();
+document.getElementById('btnDarkToggle').addEventListener('click', () => {
+  document.documentElement.classList.toggle('dark');
+  localStorage.setItem('cht_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+});
 
-// Smart Assistant Banner copy: when any day this week is 🔴, name the single
-// heaviest assignment due that day so students know what to start clearing first.
-function generateWorkloadAdvice(days) {
-  const redDays = days.filter(d => d.level.key === 'red' && d.items.length);
-  if (!redDays.length) return null;
-  const worst = redDays[0];
-  const heaviest = [...worst.items].sort((x, y) => y._cls.minutes - x._cls.minutes)[0];
-  const hrs = (worst.minutes / 60).toFixed(1);
-  return `${WEEKDAY_TH_FULL[worst.dow]} มีงานสะสม ${hrs} ชม. (🔴) แนะนำให้ทยอยเคลียร์งาน "${heaviest.title}" ตั้งแต่วันนี้`;
-}
-
-// Builds a formatted plain-text summary of pending assignments (with countdown
-// badges) for sharing to LINE — sorted by due date, ready to paste or share.
-function buildLineShareSummary() {
-  const c = state.classroom;
-  const pending = state.assignments
-    .filter(a => !state.doneIds.has(a.id))
-    .sort((x, y) => new Date(x.due_date) - new Date(y.due_date));
-
-  const lines = [`📚 สรุปการบ้าน ${GRADE_TH[c.grade_level]}/${c.room_number}`, ''];
-  if (!pending.length) {
-    lines.push('ไม่มีการบ้านค้างส่งตอนนี้ 🎉');
-  } else {
-    pending.forEach(a => {
-      const subj = state.subjects.find(s => s.id === a.subject_id);
-      const badge = dueBadge(a.due_date);
-      lines.push(`• [${badge.label}] ${a.title}${subj?.subject_code ? ` (${subj.subject_code})` : ''}`);
-      lines.push(`  กำหนดส่ง: ${fmtDateTime(a.due_date)}`);
-    });
+/* ==============================================================================
+   CLASSROOM PICKER
+   ============================================================================== */
+function populatePicker() {
+  const gradeSel = document.getElementById('pickGrade');
+  const roomSel = document.getElementById('pickRoom');
+  gradeSel.innerHTML = '';
+  for (let g = 1; g <= 6; g++) {
+    const opt = document.createElement('option');
+    opt.value = g; opt.textContent = `มัธยมศึกษาปีที่ ${g} (ม.${g})`;
+    gradeSel.appendChild(opt);
   }
-  lines.push('', `🔗 ${window.location.href}`);
-  return lines.join('\n');
+  roomSel.innerHTML = '';
+  for (let r = 1; r <= 12; r++) {
+    const opt = document.createElement('option');
+    opt.value = r; opt.textContent = `ห้อง ${r}`;
+    roomSel.appendChild(opt);
+  }
+}
+populatePicker();
+
+document.getElementById('btnChangeRoom').addEventListener('click', () => openModal('pickerOverlay'));
+
+document.getElementById('btnEnterRoom').addEventListener('click', async () => {
+  const grade = parseInt(document.getElementById('pickGrade').value, 10);
+  const room = parseInt(document.getElementById('pickRoom').value, 10);
+  const errEl = document.getElementById('pickerError');
+  errEl.classList.add('hidden');
+  try {
+    const { data, error } = await supabase.rpc('get_or_create_classroom', { p_grade: grade, p_room: room });
+    if (error) throw error;
+    const roomRow = Array.isArray(data) ? data[0] : data;
+    state.room = roomRow;
+    localStorage.setItem('cht_room', JSON.stringify(roomRow));
+    document.getElementById('roomLabel').textContent = `ม.${grade}/${room} (แตะเพื่อเปลี่ยนห้อง)`;
+    closeModal('pickerOverlay');
+    if (state.isRep) document.getElementById('fabWrap').classList.remove('hidden');
+    await loadEverything();
+  } catch (e) {
+    errEl.textContent = 'ไม่สามารถเข้าห้องเรียนได้: ' + (e.message || 'Error');
+    errEl.classList.remove('hidden');
+  }
+});
+
+async function restoreRoom() {
+  const saved = localStorage.getItem('cht_room');
+  if (!saved) return false;
+  try {
+    state.room = JSON.parse(saved);
+    document.getElementById('roomLabel').textContent = `ม.${state.room.grade_level}/${state.room.room_number} (แตะเพื่อเปลี่ยนห้อง)`;
+    closeModal('pickerOverlay');
+    if (state.isRep) document.getElementById('fabWrap').classList.remove('hidden');
+    await loadEverything();
+    return true;
+  } catch (e) { return false; }
 }
 
-function toast(msg, type='default') {
-  const root = document.getElementById('toast-root');
-  const el = document.createElement('div');
-  const styles = {
-    default: 'bg-slate-800 dark:bg-slate-700 text-white',
-    success: 'bg-emerald-600 text-white',
-    error: 'bg-red-600 text-white',
-  };
-  el.className = `fade-in pointer-events-auto max-w-sm w-fit px-4 py-2.5 rounded-full text-sm font-medium shadow-pop ${styles[type]||styles.default}`;
-  el.textContent = msg;
-  root.appendChild(el);
-  setTimeout(() => { el.style.transition='opacity .25s'; el.style.opacity='0'; setTimeout(()=>el.remove(), 250); }, 2200);
+/* ==============================================================================
+   REPRESENTATIVE MODE TOGGLE
+   ============================================================================== */
+document.getElementById('btnRepMode').addEventListener('click', () => {
+  if (state.isRep) {
+    state.isRep = false;
+    sessionStorage.removeItem('cht_is_rep');
+    document.getElementById('fabWrap').classList.add('hidden');
+    renderTasks();
+    toast('ออกจากโหมดตัวแทนห้องแล้ว');
+    return;
+  }
+  document.getElementById('passcodeInput').value = '';
+  document.getElementById('passcodeStatus').textContent = '';
+  checkLockoutState();
+  openModal('passcodeOverlay');
+});
+document.getElementById('btnPasscodeSubmit').addEventListener('click', submitPasscode);
+document.getElementById('passcodeInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') submitPasscode(); });
+
+/* ==============================================================================
+   LINE BUTTONS
+   ============================================================================== */
+document.getElementById('btnLineShare').addEventListener('click', () => {
+  const shareUrl = safeUrl(window.location.href);
+  const lineUrl = 'https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(shareUrl);
+  window.open(lineUrl, '_blank', 'noopener,noreferrer');
+});
+
+document.getElementById('btnLineBot').addEventListener('click', () => {
+  const url = safeUrl(`https://line.me/R/ti/p/${encodeURIComponent(LINE_BOT_ID)}`);
+  if (url) window.open(url, '_blank', 'noopener,noreferrer');
+});
+
+/* ==============================================================================
+   DATA LOADING
+   ============================================================================== */
+async function loadEverything() {
+  await Promise.all([loadSubjects(), loadTasks()]);
+  renderSubjectChips();
+  renderTasks();
+  renderWorkloadChart();
+  populateSubjectSelects();
+  lucide.createIcons();
 }
 
-function confirmDialog({ title, message, confirmLabel='ยืนยัน', danger=false }) {
-  return new Promise((resolve) => {
-    const root = document.getElementById('modal-root');
-    root.innerHTML = `
-      <div class="fixed inset-0 z-[300] bg-slate-900/40 dark:bg-black/60 flex items-end sm:items-center justify-center p-4" id="confirm-backdrop">
-        <div class="rise-in bg-white dark:bg-slate-900 rounded-xl2 shadow-pop w-full max-w-sm p-5 border border-slate-200 dark:border-slate-800">
-          <h3 class="font-bold text-lg text-slate-900 dark:text-white">${esc(title)}</h3>
-          <p class="text-slate-500 dark:text-slate-400 text-sm mt-1.5 leading-relaxed">${esc(message)}</p>
-          <div class="flex gap-2 mt-5">
-            <button id="confirm-cancel" class="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-sm">ยกเลิก</button>
-            <button id="confirm-ok" class="flex-1 py-2.5 rounded-xl ${danger?'bg-red-600':'bg-brand-600'} text-white font-semibold text-sm">${esc(confirmLabel)}</button>
-          </div>
-        </div>
-      </div>`;
-    document.getElementById('confirm-cancel').onclick = () => { root.innerHTML=''; resolve(false); };
-    document.getElementById('confirm-ok').onclick = () => { root.innerHTML=''; resolve(true); };
-    document.getElementById('confirm-backdrop').addEventListener('click', (e) => { if (e.target.id==='confirm-backdrop'){root.innerHTML=''; resolve(false);} });
+async function loadSubjects() {
+  if (!state.room) return;
+  const { data, error } = await supabase
+    .from('subjects')
+    .select('*')
+    .eq('classroom_id', state.room.id)
+    .order('subject_name', { ascending: true });
+  if (!error) state.subjects = data || [];
+}
+
+async function loadTasks() {
+  if (!state.room) return;
+  const { data, error } = await supabase
+    .from('assignments')
+    .select('*, subjects(subject_code, subject_name)')
+    .eq('classroom_id', state.room.id)
+    .order('due_date', { ascending: true });
+  if (!error) state.tasks = data || [];
+}
+
+/* ==============================================================================
+   SUBJECT BADGE RENDERING
+   ============================================================================== */
+function subjectBadgeHtml(subject) {
+  if (!subject) {
+    return `<span class="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 text-[11px] font-medium">วิชาทั่วไป</span>`;
+  }
+  const name = subject.subject_name || '';
+  const code = subject.subject_code || '';
+  const primary = name || code || 'วิชาทั่วไป';
+  const codeSub = name && code ? `<span class="opacity-70 font-normal">[${esc(code)}]</span> ` : '';
+  return `<span class="px-2.5 py-1 rounded-full bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-[11px] font-semibold whitespace-nowrap">
+      ${codeSub}${esc(primary)}
+    </span>`;
+}
+
+function renderSubjectChips() {
+  const wrap = document.getElementById('subjectChips');
+  const chips = [`<button data-filter="__all" class="chip px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap ${state.activeSubjectFilter === null ? 'bg-brand-600 text-white' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800'}">ทั้งหมด</button>`];
+  state.subjects.forEach(s => {
+    const active = state.activeSubjectFilter === s.id;
+    chips.push(`<button data-filter="${esc(s.id)}" class="chip px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap ${active ? 'bg-brand-600 text-white' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800'}">
+        📘 ${esc(s.subject_name || s.subject_code || '')}
+      </button>`);
+  });
+  wrap.innerHTML = chips.join('');
+  wrap.querySelectorAll('button[data-filter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.activeSubjectFilter = btn.dataset.filter === '__all' ? null : btn.dataset.filter;
+      renderSubjectChips();
+      renderTasks();
+      lucide.createIcons();
+    });
   });
 }
 
-// ----- Client-side image compression --------------------------------------
-// Draws the source image onto a canvas, resizes to a max dimension, and
-// re-encodes as JPEG. Iteratively lowers quality (and, if still too large,
-// dimensions) until the blob is under the target byte size.
-function loadImageFromFile(file) {
+/* ==============================================================================
+   TASK CARD RENDERING
+   ============================================================================== */
+function subjectById(id) { return state.subjects.find(s => s.id === id); }
+
+function isCompleted(taskId) {
+  const done = JSON.parse(localStorage.getItem('cht_completed') || '{}');
+  return !!done[taskId];
+}
+function toggleCompleted(taskId) {
+  const done = JSON.parse(localStorage.getItem('cht_completed') || '{}');
+  done[taskId] = !done[taskId];
+  localStorage.setItem('cht_completed', JSON.stringify(done));
+}
+
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const due = new Date(dateStr);
+  const now = new Date();
+  return Math.round((due - now) / (1000 * 60 * 60 * 24));
+}
+
+function renderTasks() {
+  const list = state.tasks
+    .filter(t => state.activeSubjectFilter === null || t.subject_id === state.activeSubjectFilter);
+
+  const container = document.getElementById('taskList');
+  const empty = document.getElementById('emptyState');
+  if (list.length === 0) {
+    container.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  container.innerHTML = list.map(task => {
+    const subject = task.subjects || subjectById(task.subject_id);
+    const done = isCompleted(task.id);
+    const d = daysUntil(task.due_date);
+    let dueBadge = '';
+    if (d !== null) {
+      let cls = 'bg-slate-100 dark:bg-slate-800 text-slate-500';
+      let label = `เหลืออีก ${d} วัน`;
+      if (d < 0) { cls = 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'; label = 'เลยกำหนดส่ง'; }
+      else if (d === 0) { cls = 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'; label = 'ส่งวันนี้'; }
+      else if (d <= 2) { cls = 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'; }
+      dueBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${cls}">${label}</span>`;
+    }
+
+    const images = Array.isArray(task.images) ? task.images : [];
+    const thumbs = images.slice(0, 3).map((img, i) => {
+      const u = safeUrl(img.url || img);
+      if (!u) return '';
+      return `<img src="${esc(u)}" data-task="${esc(task.id)}" data-idx="${i}" class="task-thumb w-14 h-14 object-cover rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer">`;
+    }).join('');
+
+    return `
+    <div class="task-card bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm ${done ? 'opacity-55' : ''}">
+      <div class="flex items-start justify-between gap-2 mb-2">
+        <div class="flex flex-wrap items-center gap-1.5">
+          ${subjectBadgeHtml(subject)}
+          <span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300">${task.task_type === 'GROUP' ? 'งานกลุ่ม' : 'งานเดี่ยว'}</span>
+          <span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300">~${esc(task.estimated_minutes || 20)} นาที</span>
+        </div>
+        <button data-toggle-done="${esc(task.id)}" class="shrink-0 w-7 h-7 rounded-full border-2 flex items-center justify-center transition ${done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600'}">
+          ${done ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}
+        </button>
+      </div>
+      <h3 class="font-display font-semibold text-sm mb-1 ${done ? 'line-through' : ''}">${esc(task.title)}</h3>
+      <div class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-2">${linkifyText(task.description || '')}</div>
+      ${thumbs ? `<div class="flex gap-1.5 mb-2">${thumbs}</div>` : ''}
+      <div class="flex items-center justify-between mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/60">
+        ${dueBadge || '<span></span>'}
+        ${state.isRep ? `<div class="flex gap-1.5">
+          <button data-edit-task="${esc(task.id)}" class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+          <button data-delete-task="${esc(task.id)}" class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+        </div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  container.querySelectorAll('[data-toggle-done]').forEach(btn => {
+    btn.addEventListener('click', () => { toggleCompleted(btn.dataset.toggleDone); renderTasks(); lucide.createIcons(); });
+  });
+  container.querySelectorAll('[data-edit-task]').forEach(btn => {
+    btn.addEventListener('click', () => openTaskModal(state.tasks.find(t => t.id === btn.dataset.editTask)));
+  });
+  container.querySelectorAll('[data-delete-task]').forEach(btn => {
+    btn.addEventListener('click', () => deleteTask(btn.dataset.deleteTask));
+  });
+  container.querySelectorAll('.task-thumb').forEach(img => {
+    img.addEventListener('click', () => {
+      const task = state.tasks.find(t => t.id === img.dataset.task);
+      openLightbox((task.images || []).map(i => i.url || i), parseInt(img.dataset.idx, 10));
+    });
+  });
+  lucide.createIcons();
+}
+
+async function deleteTask(id) {
+  if (!confirm('ยืนยันการลบการบ้านนี้ใช่หรือไม่?')) return;
+  const { error } = await supabase.from('assignments').delete().eq('id', id);
+  if (error) { toast('ลบไม่สำเร็จ: ' + error.message); return; }
+  await loadEverything();
+  toast('ลบการบ้านเรียบร้อย');
+}
+
+/* ==============================================================================
+   LIGHTBOX
+   ============================================================================== */
+function openLightbox(images, startIdx) {
+  state.lightboxImages = (images || []).map(safeUrl).filter(Boolean);
+  state.lightboxIndex = startIdx || 0;
+  if (state.lightboxImages.length === 0) return;
+  renderLightbox();
+  openModal('lightboxOverlay');
+}
+function renderLightbox() {
+  document.getElementById('lightboxImg').src = state.lightboxImages[state.lightboxIndex];
+}
+document.getElementById('lightboxClose').addEventListener('click', () => closeModal('lightboxOverlay'));
+document.getElementById('lightboxPrev').addEventListener('click', () => {
+  state.lightboxIndex = (state.lightboxIndex - 1 + state.lightboxImages.length) % state.lightboxImages.length;
+  renderLightbox();
+});
+document.getElementById('lightboxNext').addEventListener('click', () => {
+  state.lightboxIndex = (state.lightboxIndex + 1) % state.lightboxImages.length;
+  renderLightbox();
+});
+
+/* ==============================================================================
+   WORKLOAD ANALYTICS (Canvas Bar Chart)
+   ============================================================================== */
+function renderWorkloadChart() {
+  const canvas = document.getElementById('workloadChart');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const width = canvas.clientWidth || canvas.parentElement.clientWidth;
+  canvas.width = width * dpr;
+  canvas.height = 120 * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, width, 120);
+
+  const days = ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา'];
+  const totals = [0, 0, 0, 0, 0, 0, 0];
+  const today = new Date();
+  const startOfWeek = new Date(today);
+  const dow = (today.getDay() + 6) % 7;
+  startOfWeek.setDate(today.getDate() - dow);
+  startOfWeek.setHours(0,0,0,0);
+
+  state.tasks.forEach(t => {
+    if (!t.due_date) return;
+    const due = new Date(t.due_date);
+    const diff = Math.round((due - startOfWeek) / (1000 * 60 * 60 * 24));
+    if (diff >= 0 && diff < 7) totals[diff] += (t.estimated_minutes || 20);
+  });
+
+  const max = Math.max(...totals, 30);
+  const barW = width / 7;
+  const isDark = document.documentElement.classList.contains('dark');
+  totals.forEach((val, i) => {
+    const h = (val / max) * 80;
+    const x = i * barW + barW * 0.25;
+    const barWidth = barW * 0.5;
+    ctx.fillStyle = val > 90 ? '#f59e0b' : (isDark ? '#59b0ff' : '#2f8fff');
+    const radius = 6;
+    ctx.beginPath();
+    ctx.roundRect(x, 92 - h, barWidth, h, [radius, radius, 0, 0]);
+    ctx.fill();
+    ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
+    ctx.font = '11px "Noto Sans Thai", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(days[i], x + barWidth / 2, 110);
+  });
+
+  const alertEl = document.getElementById('workloadAlert');
+  const heavyDays = totals.filter(v => v > 90).length;
+  alertEl.classList.toggle('hidden', heavyDays === 0);
+}
+window.addEventListener('resize', () => renderWorkloadChart());
+
+/* ==============================================================================
+   SUBJECT SELECTS
+   ============================================================================== */
+function populateSubjectSelects() {
+  const options = state.subjects.map(s => {
+    const label = s.subject_name ? (s.subject_code ? `[${s.subject_code}] ${s.subject_name}` : s.subject_name) : (s.subject_code || 'ไม่มีชื่อวิชา');
+    return `<option value="${esc(s.id)}">${esc(label)}</option>`;
+  }).join('');
+  ['taskSubject', 'aiSubject'].forEach(id => {
+    const sel = document.getElementById(id);
+    const current = sel.value;
+    sel.innerHTML = `<option value="">-- ไม่ระบุวิชา --</option>` + options;
+    if (current) sel.value = current;
+  });
+}
+
+/* ==============================================================================
+   IMAGE COMPRESSION (~250KB Base64)
+   ============================================================================== */
+function compressImageToBase64(file, targetKB = 250, maxDim = 1600) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const reader = new FileReader();
     reader.onload = (e) => { img.src = e.target.result; };
     reader.onerror = reject;
-    img.onload = () => resolve(img);
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        const scale = maxDim / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      let quality = 0.85;
+      let dataUrl = canvas.toDataURL('image/jpeg', quality);
+      let iterations = 0;
+      while (dataUrl.length / 1024 > targetKB && quality > 0.15 && iterations < 8) {
+        quality -= 0.1;
+        dataUrl = canvas.toDataURL('image/jpeg', quality);
+        iterations++;
+      }
+      resolve(dataUrl);
+    };
     img.onerror = reject;
     reader.readAsDataURL(file);
   });
 }
-function canvasToBlob(canvas, quality) {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('compress failed')), 'image/jpeg', quality);
-  });
-}
-async function compressImage(file, { maxDim = 1200, quality = 0.75, maxBytes = 250 * 1024 } = {}) {
-  const img = await loadImageFromFile(file);
-  let dim = maxDim;
-  for (let attempt = 0; attempt < 4; attempt++) {
-    let { width, height } = img;
-    if (width > dim || height > dim) {
-      const scale = dim / Math.max(width, height);
-      width = Math.round(width * scale);
-      height = Math.round(height * scale);
-    }
-    const canvas = document.createElement('canvas');
-    canvas.width = width; canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, width, height);
 
-    let q = quality;
-    let blob = await canvasToBlob(canvas, q);
-    while (blob.size > maxBytes && q > 0.4) {
-      q -= 0.1;
-      blob = await canvasToBlob(canvas, q);
-    }
-    if (blob.size <= maxBytes || dim <= 500) return blob;
-    dim = Math.round(dim * 0.75); // still too big — shrink dimensions and retry
-  }
-  // Fall through: return whatever the last attempt produced.
-  const canvas = document.createElement('canvas');
-  canvas.width = img.width; canvas.height = img.height;
-  canvas.getContext('2d').drawImage(img, 0, 0);
-  return canvasToBlob(canvas, 0.6);
+/* ==============================================================================
+   TASK MODAL
+   ============================================================================== */
+function resetTaskForm() {
+  document.getElementById('taskForm').reset();
+  document.getElementById('taskId').value = '';
+  document.getElementById('taskImagePreview').innerHTML = '';
+  document.getElementById('taskAttachmentList').innerHTML = '';
+  state.currentTaskImages = [];
+  state.currentTaskAttachments = [];
+  document.getElementById('taskModalTitle').textContent = 'เพิ่มการบ้าน';
 }
 
-// Room-scoped uploads (homework images/documents) are filed under a per-classroom
-// subfolder on the Drive side; shared uploads (teacher avatars, subject icons) pass
-// an empty roomFolder so they land in a folder shared across every classroom.
-function getRoomFolder() {
-  return state.classroom ? `ม.${state.classroom.grade_level}-${state.classroom.room_number}` : '';
+function openTaskModal(task) {
+  resetTaskForm();
+  if (task) {
+    document.getElementById('taskModalTitle').textContent = 'แก้ไขการบ้าน';
+    document.getElementById('taskId').value = task.id;
+    document.getElementById('taskSubject').value = task.subject_id || '';
+    document.getElementById('taskTitle').value = task.title || '';
+    document.getElementById('taskDesc').value = task.description || '';
+    document.getElementById('taskType').value = task.task_type || 'INDIVIDUAL';
+    document.getElementById('taskDue').value = task.due_date ? task.due_date.slice(0, 16) : '';
+    document.getElementById('taskWorkload').value = task.estimated_minutes || 20;
+    state.currentTaskImages = Array.isArray(task.images) ? [...task.images] : [];
+    state.currentTaskAttachments = Array.isArray(task.attachments) ? [...task.attachments] : [];
+    renderTaskImagePreview();
+    renderTaskAttachmentList();
+  }
+  openModal('taskModalOverlay');
 }
 
-// Dual pipeline: images are compressed client-side before upload; documents
-// (PDF/Word/PPTX/XLSX/ZIP) are sent as-is, capped at 15MB. category and roomFolder
-// tell the Apps Script which subfolder to file the upload under. Returns the full
-// Apps Script response so callers can save url/downloadUrl/fileName as needed.
-async function uploadFileToGoogleDrive(file, { isImage = false, maxDim = 1200, quality = 0.75, maxBytes = 250 * 1024, category = '', roomFolder = '' } = {}) {
-  if (!GOOGLE_DRIVE_SCRIPT_URL || GOOGLE_DRIVE_SCRIPT_URL.includes('YOUR_GOOGLE_APPS_SCRIPT')) {
-    throw new Error('กรุณาตั้งค่า GOOGLE_DRIVE_SCRIPT_URL ก่อนอัปโหลดไฟล์');
-  }
-  let base64Data = '';
-  let mimeType = file.type || 'application/octet-stream';
-  let fileName = file.name || `file_${Date.now()}`;
-
-  if (isImage && file.type.startsWith('image/')) {
-    const blob = await compressImage(file, { maxDim, quality, maxBytes });
-    base64Data = await fileToBase64(blob);
-    mimeType = 'image/jpeg';
-  } else {
-    if (file.size > 15 * 1024 * 1024) throw new Error('ไฟล์มีขนาดเกิน 15 MB');
-    base64Data = await fileToBase64(file);
-  }
-
-  let response;
-  try {
-    response = await fetch(GOOGLE_DRIVE_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ base64Data, mimeType, fileName, category, roomFolder })
+function renderTaskImagePreview() {
+  const wrap = document.getElementById('taskImagePreview');
+  wrap.innerHTML = state.currentTaskImages.map((img, i) => {
+    const u = safeUrl(img.url || img);
+    return `<div class="relative">
+      <img src="${esc(u)}" class="w-14 h-14 object-cover rounded-xl border border-slate-200 dark:border-slate-700">
+      <button data-remove-img="${i}" class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-600 text-white text-[10px] flex items-center justify-center">✕</button>
+    </div>`;
+  }).join('');
+  wrap.querySelectorAll('[data-remove-img]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.currentTaskImages.splice(parseInt(btn.dataset.removeImg, 10), 1);
+      renderTaskImagePreview();
     });
-  } catch (e) {
-    throw new Error('เชื่อมต่อ Google Drive ไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่');
-  }
-  let result;
-  try {
-    result = await response.json();
-  } catch (e) {
-    throw new Error('Google Drive ตอบกลับไม่ถูกต้อง');
-  }
-  if (!result.success || !result.url) {
-    throw new Error(result.error || 'เกิดข้อผิดพลาดในการอัปโหลดไฟล์ไป Google Drive');
-  }
-  return result; // { url, downloadUrl, fileId, fileName, mimeType }
-}
-
-// Pulls a Google Drive file ID out of any of the URL shapes the Apps Script
-// (or Drive UI) commonly returns: /file/d/ID/view, ?id=ID, uc?id=, open?id=,
-// thumbnail?id=, or lh3.googleusercontent.com/d/ID. Returns null if none match.
-function extractDriveFileId(url) {
-  if (!url) return null;
-  const patterns = [
-    /\/d\/([a-zA-Z0-9_-]{10,})/,   // .../file/d/FILE_ID/view  or  .../d/FILE_ID
-    /[?&]id=([a-zA-Z0-9_-]{10,})/, // ...?id=FILE_ID  (uc, open, thumbnail links)
-  ];
-  for (const re of patterns) {
-    const m = url.match(re);
-    if (m) return m[1];
-  }
-  return null;
-}
-
-// Asks the Google Apps Script web app to delete a file from Drive by ID.
-// Best-effort: throws on failure so the caller can decide whether to continue.
-async function deleteFileFromGoogleDrive(fileId) {
-  if (!fileId || !GOOGLE_DRIVE_SCRIPT_URL || GOOGLE_DRIVE_SCRIPT_URL.includes('YOUR_GOOGLE_APPS_SCRIPT')) return;
-  const response = await fetch(GOOGLE_DRIVE_SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'delete', fileId }),
-  });
-  const result = await response.json();
-  if (!result.success) throw new Error(result.error || 'ลบไฟล์บน Google Drive ไม่สำเร็จ');
-}
-
-// Deletes every Drive file attached to an assignment (image_url + file_url,
-// which are usually different files). Each deletion is best-effort — a
-// failure here is logged but never blocks removing the assignment record.
-async function deleteAssignmentDriveFiles(assignment) {
-  const urls = [assignment?.image_url, assignment?.file_url].filter(Boolean);
-  for (const url of urls) {
-    const fileId = extractDriveFileId(url);
-    if (!fileId) continue;
-    try {
-      await deleteFileFromGoogleDrive(fileId);
-    } catch (e) {
-      console.error('ลบไฟล์บน Google Drive ไม่สำเร็จ:', fileId, e);
-    }
-  }
-}
-
-
-// folder ∈ 'teachers' | 'subjects' | 'assignments' — maps to the matching Drive
-// category, and to a room subfolder for assignment images only (teacher/subject
-// media is shared across classrooms so it stays in the shared folder).
-const UPLOAD_CATEGORY = {
-  teachers: 'รูปครูผู้สอน',
-  subjects: 'ไอคอนวิชา',
-  assignments: 'การบ้านและชีทเรียน',
-};
-const UPLOAD_IS_ROOM_SCOPED = { assignments: true };
-
-async function uploadImage(file, folder, opts) {
-  const category = UPLOAD_CATEGORY[folder] || '';
-  const roomFolder = UPLOAD_IS_ROOM_SCOPED[folder] ? getRoomFolder() : '';
-  const result = await uploadFileToGoogleDrive(file, { isImage: true, ...opts, category, roomFolder });
-  return result.url;
-}
-
-function formatFileSize(bytes) {
-  if (bytes === null || bytes === undefined || isNaN(bytes)) return '';
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function fileTypeMeta(fileName) {
-  const ext = (fileName || '').split('.').pop().toLowerCase();
-  if (ext === 'pdf') return { icon: 'file-text', label: 'PDF' };
-  if (['doc', 'docx'].includes(ext)) return { icon: 'file-text', label: 'Word' };
-  if (['ppt', 'pptx'].includes(ext)) return { icon: 'presentation', label: 'PowerPoint' };
-  if (['xls', 'xlsx'].includes(ext)) return { icon: 'file-spreadsheet', label: 'Excel' };
-  if (ext === 'zip' || ext === 'rar') return { icon: 'file-archive', label: 'ZIP' };
-  return { icon: 'file', label: ext ? ext.toUpperCase() : 'ไฟล์' };
-}
-
-function icon(name, cls='w-4 h-4') {
-  return `<i data-lucide="${name}" class="${cls}"></i>`;
-}
-function renderIcons() { if (window.lucide) lucide.createIcons(); }
-
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result.split(',')[1]);
-    r.onerror = reject;
-    r.readAsDataURL(file);
   });
 }
 
-// ---------- DATA LOADING ----------------------------------------------------
-async function loadClassroomData() {
-  if (!state.classroom) return;
-  const sb = await ensureSupabase();
-  if (!sb) { state.view = 'picker'; render(); return; }
-  state.loading = true; render();
-  try {
-    const [{ data: subs, error: subErr }, { data: asns, error: asnErr }] = await Promise.all([
-      sb.from('subjects').select('*').eq('classroom_id', state.classroom.id).order('subject_code'),
-      sb.from('assignments').select('*').eq('classroom_id', state.classroom.id).order('due_date', { ascending: true }),
-    ]);
-    if (subErr || asnErr) { toast('โหลดข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง', 'error'); console.error(subErr, asnErr); }
-    state.subjects = subs || [];
-    state.assignments = asns || [];
-  } catch (e) {
-    console.error(e);
-    toast('เชื่อมต่อฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง', 'error');
-  } finally {
-    state.loading = false;
-    render();
-  }
-}
-
-// ---------- SHARED CHROME ----------------------------------------------------
-function themeToggleBtn() {
-  return `<button id="theme-toggle" class="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 shadow-card border border-slate-200 dark:border-slate-800 grid place-items-center text-slate-500 dark:text-slate-300 shrink-0">
-    ${isDarkMode() ? icon('sun','w-4 h-4') : icon('moon','w-4 h-4')}
-  </button>`;
-}
-
-// ---------- VIEWS ----------------------------------------------------------
-
-function ViewPicker() {
-  const grades = [1,2,3,4,5,6];
-  const rooms = Array.from({length:12},(_,i)=>i+1);
-  return `
-  <div class="p-5 fade-in">
-    <div class="flex items-center justify-between mb-1">
-      <div class="flex items-center gap-2">
-        <div class="w-9 h-9 rounded-xl bg-brand-600 text-white grid place-items-center">${icon('book-open-check','w-5 h-5')}</div>
-        <h1 class="text-lg font-extrabold text-slate-900 dark:text-white">ห้องนี้มีการบ้าน</h1>
-      </div>
-      ${themeToggleBtn()}
-    </div>
-    <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">เลือกห้องเรียนของคุณเพื่อดูการบ้าน</p>
-
-    <div class="bg-white dark:bg-slate-900 rounded-xl2 shadow-card border border-slate-200 dark:border-slate-800 p-4 space-y-4">
-      <div>
-        <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 block">ระดับชั้น</label>
-        <div class="grid grid-cols-6 gap-2" id="grade-grid">
-          ${grades.map(g => `<button data-grade="${g}" class="grade-btn py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-700 dark:text-slate-200 data-[active=true]:bg-brand-600 data-[active=true]:text-white data-[active=true]:border-brand-600">ม.${g}</button>`).join('')}
-        </div>
-      </div>
-      <div>
-        <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 block">ห้อง</label>
-        <div class="grid grid-cols-6 gap-2" id="room-grid">
-          ${rooms.map(r => `<button data-room="${r}" class="room-btn py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-700 dark:text-slate-200 data-[active=true]:bg-brand-600 data-[active=true]:text-white data-[active=true]:border-brand-600">${r}</button>`).join('')}
-        </div>
-      </div>
-      <button id="confirm-picker" class="w-full py-3 rounded-xl bg-brand-600 text-white font-bold text-sm disabled:opacity-40" disabled>เข้าห้องเรียน</button>
-    </div>
-  </div>`;
-}
-
-function ViewDashboard() {
-  const c = state.classroom;
-  const filtered = state.assignments.filter(a => {
-    if (state.filter === 'pending' && state.doneIds.has(a.id)) return false;
-    if (state.filter === 'done' && !state.doneIds.has(a.id)) return false;
-    if (state.subjectFilter !== 'all' && a.subject_id !== state.subjectFilter) return false;
-    if (state.search) {
-      const q = state.search.toLowerCase();
-      const subj = state.subjects.find(s => s.id === a.subject_id);
-      const hay = `${a.title} ${a.description||''} ${subj?.subject_name||''} ${subj?.subject_code||''} ${subj?.teacher_name||''}`.toLowerCase();
-      if (!hay.includes(q)) return false;
-    }
-    return true;
-  });
-
-  const pendingCount = state.assignments.filter(a => !state.doneIds.has(a.id)).length;
-
-  // Smart Priority Sort: pending items first (ranked by urgency), completed
-  // items pushed to the bottom (kept in their normal due-date order).
-  if (state.smartSort) {
-    filtered.sort((x, y) => {
-      const xDone = state.doneIds.has(x.id), yDone = state.doneIds.has(y.id);
-      if (xDone !== yDone) return xDone ? 1 : -1;
-      if (xDone && yDone) return new Date(x.due_date) - new Date(y.due_date);
-      return priorityScore(y) - priorityScore(x);
-    });
-  }
-
-  return `
-  <div class="fade-in">
-    <div class="sticky top-0 z-30 bg-slate-100/90 dark:bg-slate-950/90 backdrop-blur px-5 pt-5 pb-3">
-      <div class="flex items-center justify-between">
-        <div>
-          <div class="text-xs text-slate-400 dark:text-slate-500 font-medium">ห้องเรียน</div>
-          <div class="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
-            ${GRADE_TH[c.grade_level]}/${c.room_number}
-            <button id="switch-room" class="text-xs text-brand-600 dark:text-brand-400 font-semibold underline underline-offset-2">เปลี่ยนห้อง</button>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <button id="workload-toggle-btn" class="w-9 h-9 rounded-xl ${state.showWorkload ? 'bg-brand-600 text-white' : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-800'} shadow-card grid place-items-center shrink-0" title="แสดง/ซ่อนภาระงานสัปดาห์นี้">📊</button>
-          <button id="refresh-btn" class="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 shadow-card border border-slate-200 dark:border-slate-800 grid place-items-center text-slate-500 dark:text-slate-300 shrink-0" title="รีเฟรชข้อมูล">${icon('refresh-cw','w-4 h-4')}</button>
-          <button id="line-share-btn" class="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 shadow-card border border-slate-200 dark:border-slate-800 grid place-items-center text-emerald-600 dark:text-emerald-400 shrink-0" title="แชร์สรุปการบ้านไป LINE">${icon('share-2','w-4 h-4')}</button>
-          ${themeToggleBtn()}
-          <button id="rep-mode-btn" class="h-9 px-3 rounded-xl ${state.repMode?'bg-brand-600 text-white':'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 shadow-card border border-slate-200 dark:border-slate-800'} flex items-center gap-1.5 text-xs font-bold shrink-0">
-            ${icon('key-round','w-3.5 h-3.5')} ${state.repMode ? 'โหมดตัวแทนห้อง' : 'ตัวแทนห้อง'}
-          </button>
-        </div>
-      </div>
-
-      <div class="mt-3 relative">
-        ${icon('search', 'w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2')}
-        <input id="search-input" type="text" value="${esc(state.search)}" placeholder="ค้นหาการบ้าน วิชา หรือคำสั่งงาน..."
-          class="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 shadow-card border border-slate-200 dark:border-slate-800 text-sm outline-none focus:ring-2 focus:ring-brand-100 dark:focus:ring-brand-900">
-      </div>
-
-      <div class="mt-3 flex gap-1.5 overflow-x-auto no-scrollbar">
-        ${[['all','ทั้งหมด'],['pending',`ยังไม่เสร็จ${pendingCount?` (${pendingCount})`:''}`],['done','เสร็จแล้ว']].map(([k,l]) => `
-          <button data-tab="${k}" class="tab-btn shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold border ${state.filter===k?'bg-brand-600 text-white border-brand-600':'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800'}">${l}</button>
-        `).join('')}
-      </div>
-
-      ${state.subjects.length ? `
-      <div class="mt-2 flex items-center gap-2 overflow-x-auto no-scrollbar py-1 whitespace-nowrap">
-        <button data-subj="all" class="subj-filter-btn flex-shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold border ${state.subjectFilter==='all'?'bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-800 dark:border-slate-100':'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800'}">ทุกวิชา</button>
-        ${state.subjects.map(s => {
-          const col = colorForSubject(s.subject_code);
-          const active = state.subjectFilter === s.id;
-          return `<button data-subj="${s.id}" class="subj-filter-btn flex-shrink-0 px-3 py-1 rounded-full text-[11px] font-semibold border ${active?'bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900 border-slate-800 dark:border-slate-100':`${col.bg} ${col.text} border-transparent`}">${esc(s.subject_name || s.subject_code)}</button>`;
-        }).join('')}
-      </div>` : ''}
-    </div>
-
-    <div class="px-5 pt-2 space-y-3">
-      ${state.showWorkload ? `<div class="rise-in">${renderWorkloadDashboard()}</div>` : ''}
-
-      <button id="smart-sort-toggle" class="w-full py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${state.smartSort ? 'bg-amber-500 border-amber-500 text-white' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'}">
-        ${icon('zap', 'w-3.5 h-3.5')} ${state.smartSort ? 'กำลังเรียงตามความเร่งด่วน (Smart Sort)' : 'เรียงตามความเร่งด่วน (Smart Sort)'}
-      </button>
-
-      ${state.repMode ? `
-      <button id="add-assignment-btn" class="w-full py-3 rounded-xl border-2 border-dashed border-brand-300 dark:border-brand-700 text-brand-600 dark:text-brand-400 font-bold text-sm flex items-center justify-center gap-1.5 bg-brand-50/50 dark:bg-brand-500/10">
-        ${icon('plus','w-4 h-4')} เพิ่มการบ้านใหม่
-      </button>
-      <button id="manage-subjects-btn" class="w-full py-2.5 rounded-xl bg-white dark:bg-slate-900 shadow-card border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-sm flex items-center justify-center gap-1.5">
-        ${icon('layout-list','w-4 h-4')} จัดการรายวิชา (${state.subjects.length})
-      </button>` : ''}
-
-      ${state.loading ? renderSkeletons() : (filtered.length ? filtered.map(renderCard).join('') : renderEmpty())}
-    </div>
-  </div>`;
-}
-
-// Weekly Workload Dashboard (§3.1): a 7-day minimal bar chart plus the Smart
-// Assistant Banner, built with pure CSS/flexbox (no charting library needed).
-function renderWorkloadDashboard() {
-  const days = computeWeeklyWorkload();
-  const advice = generateWorkloadAdvice(days);
-  const today = days.find(d => d.isToday);
-  const todayMinutes = today ? today.minutes : 0;
-  const todayLevel = workloadLevel(todayMinutes);
-  const maxScaleMinutes = 240; // 4 hours — bars beyond this simply cap at 100% height
-
-  return `
-  <div class="bg-white dark:bg-slate-900 rounded-xl2 shadow-card border border-slate-200 dark:border-slate-800 p-4">
-    <div class="flex items-center justify-between mb-1">
-      <div class="flex items-center gap-1.5 font-bold text-sm text-slate-800 dark:text-slate-100">
-        ${icon('bar-chart-3', 'w-4 h-4 text-brand-500')} ภาระงานสัปดาห์นี้
-      </div>
-    </div>
-    <div class="text-xs text-slate-400 dark:text-slate-500 mb-3">
-      ภาระงานวันนี้: <span class="font-bold ${todayLevel.key==='red'?'text-red-600 dark:text-red-400':todayLevel.key==='yellow'?'text-amber-600 dark:text-amber-400':'text-emerald-600 dark:text-emerald-400'}">${minutesLabel(todayMinutes)} (${todayLevel.label} ${todayLevel.emoji})</span>
-    </div>
-
-    ${advice ? `
-    <div class="mb-3 flex items-start gap-2 p-2.5 rounded-xl bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 text-orange-700 dark:text-orange-400 text-xs leading-relaxed">
-      ${icon('sparkles', 'w-3.5 h-3.5 mt-0.5 shrink-0')}
-      <span>${esc(advice)}</span>
-    </div>` : ''}
-
-    <div class="flex items-end justify-between gap-1.5 h-24">
-      ${days.map(d => {
-        const pct = d.minutes > 0 ? Math.max(6, Math.min(100, (d.minutes / maxScaleMinutes) * 100)) : 3;
-        return `
-        <div class="flex-1 flex flex-col items-center gap-1 h-full justify-end">
-          <span class="text-[9px] num text-slate-400 dark:text-slate-500 h-3">${d.minutes > 0 ? minutesLabel(d.minutes) : ''}</span>
-          <div class="w-full rounded-md ${d.minutes > 0 ? d.level.cls : 'bg-slate-100 dark:bg-slate-800'}" style="height:${pct}%"></div>
-          <span class="text-[10px] font-bold ${d.isToday ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-slate-500'}">${esc(d.label)}</span>
-        </div>`;
-      }).join('')}
-    </div>
-  </div>`;
-}
-
-function renderSkeletons() {
-  return Array.from({length:3}).map(()=>`
-    <div class="bg-white dark:bg-slate-900 rounded-xl2 shadow-card border border-slate-200 dark:border-slate-800 p-4">
-      <div class="skeleton h-4 w-24 rounded-full mb-3"></div>
-      <div class="skeleton h-5 w-3/4 rounded mb-2"></div>
-      <div class="skeleton h-4 w-full rounded mb-1"></div>
-      <div class="skeleton h-4 w-1/2 rounded"></div>
+function renderTaskAttachmentList() {
+  const wrap = document.getElementById('taskAttachmentList');
+  wrap.innerHTML = state.currentTaskAttachments.map((att, i) => `
+    <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+      <span class="truncate flex items-center gap-1.5"><i data-lucide="paperclip" class="w-3.5 h-3.5"></i>${esc(att.name)}</span>
+      <button data-remove-att="${i}" class="text-rose-600 font-bold">✕</button>
     </div>`).join('');
-}
-
-function renderEmpty() {
-  const msgs = {
-    all: ['sparkles', 'ยังไม่มีการบ้านในห้องนี้', 'พักได้เต็มที่ ยังไม่มีงานส่ง'],
-    pending: ['party-popper', 'ทำครบทุกงานแล้ว!', 'เก่งมาก ไม่มีงานค้างส่งเลย'],
-    done: ['inbox', 'ยังไม่มีงานที่ทำเสร็จ', 'ติ๊กงานที่ทำเสร็จแล้วเพื่อเก็บไว้ที่นี่'],
-  };
-  const [ic, title, sub] = msgs[state.filter] || msgs.all;
-  return `
-    <div class="text-center py-14 px-6">
-      <div class="w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 shadow-card border border-slate-200 dark:border-slate-800 mx-auto grid place-items-center text-brand-500 mb-3">${icon(ic,'w-7 h-7')}</div>
-      <div class="font-bold text-slate-800 dark:text-slate-100">${title}</div>
-      <div class="text-slate-400 dark:text-slate-500 text-sm mt-1">${sub}</div>
-    </div>`;
-}
-
-function subjectAvatar(subj, col) {
-  if (subj && subj.subject_icon_url) {
-    return `<button data-preview="${esc(subj.subject_icon_url)}" class="w-8 h-8 rounded-lg overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-800"><img src="${esc(subj.subject_icon_url)}" class="w-full h-full object-cover" loading="lazy"></button>`;
-  }
-  return `<div class="w-8 h-8 rounded-lg shrink-0 grid place-items-center font-bold text-[11px] ${col.bg} ${col.text}">${esc((subj?.subject_code||'?').slice(0,2))}</div>`;
-}
-
-// Renders an assignment's description with line breaks preserved
-// (whitespace-pre-line, so "ข้อ 1. / ข้อ 2." style text stays on separate
-// lines) and a "ดูเพิ่มเติม / ย่อลง" toggle for long text instead of a hard
-// line-clamp cutoff. Expand state lives in state.expandedDescriptions and is
-// intentionally session-only (not persisted) — it just resets on reload.
-const DESCRIPTION_TRUNCATE_LENGTH = 150;
-function renderDescription(a) {
-  const desc = a.description || '';
-  const isLong = desc.length > DESCRIPTION_TRUNCATE_LENGTH;
-  const expanded = state.expandedDescriptions.has(a.id);
-  const shown = (!isLong || expanded) ? desc : desc.slice(0, DESCRIPTION_TRUNCATE_LENGTH).trimEnd() + '…';
-  return `
-    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 whitespace-pre-line">${esc(shown)}</p>
-    ${isLong ? `<button data-desc-toggle="${a.id}" class="text-xs font-bold text-brand-600 dark:text-brand-400 mt-0.5">${expanded ? 'ย่อลง' : 'ดูเพิ่มเติม...'}</button>` : ''}
-  `;
-}
-
-function renderCard(a) {
-  const subj = state.subjects.find(s => s.id === a.subject_id);
-  const col = subj ? colorForSubject(subj.subject_code) : { bg:'bg-slate-100 dark:bg-slate-800', text:'text-slate-600 dark:text-slate-300' };
-  const badge = dueBadge(a.due_date);
-  const done = state.doneIds.has(a.id);
-  const cls = classifyAssignment(a);
-  return `
-  <div class="bg-white dark:bg-slate-900 rounded-xl2 shadow-card border border-slate-200 dark:border-slate-800 p-4 ${done ? 'opacity-60' : ''}" data-card="${a.id}">
-    <div class="flex items-start justify-between gap-2">
-      <div class="flex items-center gap-2 mb-2 min-w-0">
-        ${subjectAvatar(subj, col)}
-        <div class="flex flex-wrap items-center gap-1.5 min-w-0">
-          <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${col.bg} ${col.text}">${esc(subj?.subject_code || 'ไม่ระบุวิชา')}</span>
-          ${subj?.subject_name ? `<span class="text-[11px] text-slate-400 dark:text-slate-500 font-medium truncate">${esc(subj.subject_name)}</span>` : ''}
-          <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${a.task_type==='GROUP' ? 'bg-fuchsia-50 dark:bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}">${a.task_type==='GROUP' ? 'งานกลุ่ม' : 'งานเดี่ยว'}</span>
-          <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">${cls.emoji} ${cls.label} ~${minutesLabel(cls.minutes)}</span>
-          ${!done && isUrgent(a) ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-500 text-white animate-pulse">🔥 ด่วนมาก</span>` : ''}
-        </div>
-      </div>
-      ${state.repMode ? `
-      <div class="flex gap-1 shrink-0">
-        <button data-edit="${a.id}" class="w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-800 grid place-items-center text-slate-500 dark:text-slate-300">${icon('pencil','w-3.5 h-3.5')}</button>
-        <button data-delete="${a.id}" class="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-500/10 grid place-items-center text-red-500 dark:text-red-400">${icon('trash-2','w-3.5 h-3.5')}</button>
-      </div>` : ''}
-    </div>
-
-    <div class="flex gap-3">
-      <div class="flex-1 min-w-0">
-        <h3 class="font-bold text-slate-900 dark:text-white leading-snug ${done?'line-through decoration-2':''}">${esc(a.title)}</h3>
-        ${a.description ? renderDescription(a) : ''}
-        ${subj?.teacher_name ? `<div class="text-xs text-slate-400 dark:text-slate-500 mt-1.5 flex items-center gap-1">
-          ${subj.teacher_image_url ? `<img src="${esc(subj.teacher_image_url)}" class="w-4 h-4 rounded-full object-cover">` : icon('user-round','w-3 h-3')}
-          ${esc(subj.teacher_name)}
-        </div>` : ''}
-        ${a.file_url ? `
-        <a href="${esc(a.file_url)}" target="_blank" rel="noopener" class="mt-2 inline-flex max-w-full items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300">
-          ${icon(fileTypeMeta(a.file_name).icon,'w-3.5 h-3.5 shrink-0')}
-          <span class="truncate">${esc(a.file_name || 'ไฟล์แนบ')}</span>
-          ${a.file_size_label ? `<span class="text-slate-400 dark:text-slate-500 shrink-0">· ${esc(a.file_size_label)}</span>` : ''}
-        </a>` : ''}
-      </div>
-      ${a.image_url ? `
-      <button data-preview="${esc(a.image_url)}" class="relative shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800">
-        <img src="${esc(a.image_url)}" class="w-full h-full object-cover" loading="lazy">
-        <span class="absolute bottom-1 right-1 bg-black/50 rounded-md p-0.5">${icon('zoom-in','w-3 h-3 text-white')}</span>
-      </button>` : ''}
-    </div>
-
-    <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-      <div class="flex items-center gap-1.5 text-xs">
-        <span class="px-2 py-1 rounded-lg font-semibold flex items-center gap-1 ${badge.cls}">${icon(badge.icon,'w-3 h-3')} ${badge.label}</span>
-        <span class="text-slate-400 dark:text-slate-500 num">${fmtDateTime(a.due_date)}</span>
-      </div>
-      <button data-toggle-done="${a.id}" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold ${done ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-300'}">
-        ${icon(done?'check-circle-2':'circle', 'w-4 h-4')} ${done ? 'เสร็จแล้ว' : 'ทำเสร็จ'}
-      </button>
-    </div>
-  </div>`;
-}
-
-// ---------- REP GATE / SUBJECT MANAGER / ASSIGNMENT FORM (modals) ----------
-
-function modalShell(inner, { wide=false } = {}) {
-  return `
-  <div class="fixed inset-0 z-[250] bg-slate-900/40 dark:bg-black/60 flex items-end sm:items-center justify-center" id="modal-backdrop">
-    <div class="rise-in bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-800 w-full ${wide?'sm:max-w-lg':'sm:max-w-md'} sm:rounded-xl2 rounded-t-xl2 max-h-[92vh] overflow-y-auto">
-      ${inner}
-    </div>
-  </div>`;
-}
-
-const inputCls = 'w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:focus:ring-brand-900 outline-none text-sm';
-const labelCls = 'text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1 block';
-const closeBtnCls = 'w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 grid place-items-center';
-
-function renderRepGate() {
-  document.getElementById('modal-root').innerHTML = modalShell(`
-    <div class="p-5">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="font-extrabold text-lg text-slate-900 dark:text-white flex items-center gap-2">${icon('key-round','w-5 h-5 text-brand-600 dark:text-brand-400')} เข้าสู่โหมดตัวแทนห้อง</h3>
-        <button id="modal-close" class="${closeBtnCls}">${icon('x','w-4 h-4')}</button>
-      </div>
-      <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">กรอกรหัสผ่านของห้อง ${GRADE_TH[state.classroom.grade_level]}/${state.classroom.room_number} เพื่อจัดการวิชาและการบ้าน</p>
-      <input id="passcode-input" type="password" maxlength="10" placeholder="รหัสผ่านห้อง" autofocus
-        class="${inputCls} text-center tracking-widest font-bold num text-lg py-3">
-      <div id="passcode-error" class="text-red-500 dark:text-red-400 text-xs text-center mt-2 hidden">รหัสผ่านไม่ถูกต้อง</div>
-      <button id="passcode-submit" class="w-full mt-4 py-3 rounded-xl bg-brand-600 text-white font-bold text-sm">ปลดล็อก</button>
-    </div>
-  `);
-  renderIcons();
-  document.getElementById('modal-close').onclick = closeModal;
-  document.getElementById('modal-backdrop').addEventListener('click', e => { if (e.target.id==='modal-backdrop') closeModal(); });
-  const input = document.getElementById('passcode-input');
-  input.focus();
-  const submitBtn = document.getElementById('passcode-submit');
-  const submit = async () => {
-    const val = input.value.trim();
-    if (!val) return;
-    const originalLabel = submitBtn.textContent;
-    submitBtn.disabled = true; submitBtn.textContent = 'กำลังตรวจสอบ...';
-    try {
-      const sb = await ensureSupabase();
-      if (!sb) return;
-      const { data, error } = await sb.rpc('verify_classroom_passcode', { p_classroom_id: state.classroom.id, p_passcode: val });
-      if (error) { toast('เกิดข้อผิดพลาด ลองใหม่', 'error'); console.error(error); return; }
-      if (data === true) {
-        setRepUnlocked(state.classroom.id);
-        state.repMode = true;
-        closeModal();
-        toast('เข้าสู่โหมดตัวแทนห้องแล้ว', 'success');
-        render();
-      } else {
-        document.getElementById('passcode-error').classList.remove('hidden');
-        input.classList.add('border-red-400');
-      }
-    } catch (e) {
-      console.error(e);
-      toast('เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง', 'error');
-    } finally {
-      if (submitBtn.isConnected) { submitBtn.disabled = false; submitBtn.textContent = originalLabel; }
-    }
-  };
-  submitBtn.onclick = submit;
-  input.addEventListener('keydown', e => { if (e.key==='Enter') submit(); });
-}
-
-function closeModal() { document.getElementById('modal-root').innerHTML = ''; }
-
-function renderSubjectManager() {
-  document.getElementById('modal-root').innerHTML = modalShell(`
-    <div class="p-5">
-      <div class="flex items-center justify-between mb-1">
-        <h3 class="font-extrabold text-lg text-slate-900 dark:text-white">จัดการรายวิชา</h3>
-        <button id="modal-close" class="${closeBtnCls}">${icon('x','w-4 h-4')}</button>
-      </div>
-      <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">เพิ่มด้วยตนเอง หรือสแกนตารางเรียนด้วย AI</p>
-
-      <div class="flex gap-2 mb-4">
-        <button id="scan-timetable-btn" class="flex-1 py-2.5 rounded-xl bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold text-sm flex items-center justify-center gap-1.5">${icon('scan-line','w-4 h-4')} สแกนตารางเรียน</button>
-        <button id="add-subject-btn" class="flex-1 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-sm flex items-center justify-center gap-1.5">${icon('plus','w-4 h-4')} เพิ่มวิชาเอง</button>
-      </div>
-
-      <div id="subject-list" class="space-y-2">
-        ${state.subjects.length ? state.subjects.map(s => {
-          const col = colorForSubject(s.subject_code);
-          return `
-          <div class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
-            ${subjectAvatar(s, col)}
-            <div class="flex-1 min-w-0">
-              <div class="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">${esc(s.subject_name || s.subject_code || '-')}</div>
-              <div class="text-xs text-slate-400 dark:text-slate-500 truncate flex items-center gap-1">
-                ${s.teacher_image_url ? `<img src="${esc(s.teacher_image_url)}" class="w-3.5 h-3.5 rounded-full object-cover">` : ''}
-                ${esc(s.teacher_name || 'ไม่ระบุครูผู้สอน')}
-              </div>
-            </div>
-            <button data-edit-subject="${s.id}" class="w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-800 grid place-items-center text-slate-500 dark:text-slate-300 shrink-0">${icon('pencil','w-3.5 h-3.5')}</button>
-            <button data-delete-subject="${s.id}" class="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-500/10 grid place-items-center text-red-500 dark:text-red-400 shrink-0">${icon('trash-2','w-3.5 h-3.5')}</button>
-          </div>`;
-        }).join('') : `<div class="text-center text-sm text-slate-400 dark:text-slate-500 py-8">ยังไม่มีรายวิชา</div>`}
-      </div>
-    </div>
-  `, { wide:true });
-  renderIcons();
-  document.getElementById('modal-close').onclick = closeModal;
-  document.getElementById('modal-backdrop').addEventListener('click', e => { if (e.target.id==='modal-backdrop') closeModal(); });
-  document.getElementById('add-subject-btn').onclick = () => { state.editingSubject = null; renderSubjectForm(); };
-  document.getElementById('scan-timetable-btn').onclick = renderOcrScanner;
-  document.querySelectorAll('[data-preview]').forEach(b => b.onclick = () => renderImagePreviewModal(b.dataset.preview));
-  document.querySelectorAll('[data-edit-subject]').forEach(b => b.onclick = () => {
-    state.editingSubject = state.subjects.find(s => s.id === b.dataset.editSubject);
-    renderSubjectForm();
+  wrap.querySelectorAll('[data-remove-att]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.currentTaskAttachments.splice(parseInt(btn.dataset.removeAtt, 10), 1);
+      renderTaskAttachmentList();
+      lucide.createIcons();
+    });
   });
-  document.querySelectorAll('[data-delete-subject]').forEach(b => b.onclick = async () => {
-    const ok = await confirmDialog({ title:'ลบรายวิชา', message:'การบ้านที่ผูกกับวิชานี้จะกลายเป็น "ไม่ระบุวิชา" ต้องการลบหรือไม่?', confirmLabel:'ลบวิชา', danger:true });
-    if (!ok) return;
-    b.disabled = true;
+  lucide.createIcons();
+}
+
+document.getElementById('taskImages').addEventListener('change', async (e) => {
+  for (const file of e.target.files) {
     try {
-      const sb = await ensureSupabase();
-      if (!sb) return;
-      const { error } = await sb.from('subjects').delete().eq('id', b.dataset.deleteSubject);
-      if (error) { toast('ลบไม่สำเร็จ', 'error'); console.error(error); return; }
-      toast('ลบรายวิชาแล้ว', 'success');
-      await loadClassroomData();
-      renderSubjectManager();
-    } catch (e) {
-      console.error(e);
-      toast('เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง', 'error');
-    } finally {
-      if (b.isConnected) b.disabled = false;
-    }
+      const base64 = await compressImageToBase64(file);
+      state.currentTaskImages.push({ url: base64, type: file.type });
+    } catch (err) { console.error(err); }
+  }
+  renderTaskImagePreview();
+  e.target.value = '';
+});
+
+document.getElementById('taskAttachments').addEventListener('change', async (e) => {
+  for (const file of e.target.files) {
+    if (file.size > 15 * 1024 * 1024) { toast(`ไฟล์ "${file.name}" เกิน 15MB`); continue; }
+    try {
+      const uploaded = await uploadToDriveProxy(file);
+      state.currentTaskAttachments.push({ name: file.name, url: uploaded.url, size: file.size, type: file.type });
+    } catch (err) { toast('อัปโหลดไฟล์ไม่สำเร็จ: ' + file.name); }
+  }
+  renderTaskAttachmentList();
+  e.target.value = '';
+});
+
+async function uploadToDriveProxy(file) {
+  const base64 = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
   });
-}
-
-// ----- Timetable OCR scanner (Gemini 3.7 Flash & 3.5 Flash-Lite) -----
-function renderOcrScanner() {
-  const key = localStorage.getItem(LS.geminiKey) || '';
-  document.getElementById('modal-root').innerHTML = modalShell(`
-    <div class="p-5">
-      <div class="flex items-center justify-between mb-1">
-        <h3 class="font-extrabold text-lg text-slate-900 dark:text-white flex items-center gap-2">
-          ${icon('scan-line','w-5 h-5 text-brand-600 dark:text-brand-400')} สแกนตารางเรียนด้วย AI
-        </h3>
-        <button id="modal-close" class="${closeBtnCls}">${icon('x','w-4 h-4')}</button>
-      </div>
-      <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
-        อัปโหลดรูปตารางเรียน ระบบจะคัดกรองเฉพาะรายวิชาที่ไม่ซ้ำกันให้อัตโนมัติ
-      </p>
-
-      <div class="mb-3">
-        <label class="${labelCls}">Gemini API Key <span class="font-normal text-slate-400 dark:text-slate-500">(บันทึกในเครื่องนี้เท่านั้น)</span></label>
-        <input id="gemini-key" type="password" value="${esc(key)}" placeholder="AIza..." class="${inputCls} num">
-      </div>
-
-      <div id="ocr-drop" class="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl2 p-6 text-center cursor-pointer hover:border-brand-500 dark:hover:border-brand-500 transition">
-        <input id="ocr-file" type="file" accept="image/*" capture="environment" class="hidden">
-        <div id="ocr-drop-content">
-          ${icon('image-plus','w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2')}
-          <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">แตะเพื่อเลือกรูปตารางเรียน</div>
-          <div class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">รองรับ JPG, PNG</div>
-        </div>
-      </div>
-
-      <div id="ocr-result" class="mt-4"></div>
-    </div>
-  `, { wide: true });
-  renderIcons();
-
-  document.getElementById('modal-close').onclick = () => renderSubjectManager();
-  document.getElementById('modal-backdrop').addEventListener('click', e => { if (e.target.id === 'modal-backdrop') renderSubjectManager(); });
-
-  const fileInput = document.getElementById('ocr-file');
-  document.getElementById('ocr-drop').onclick = () => fileInput.click();
-
-  fileInput.onchange = async () => {
-    const file = fileInput.files[0];
-    if (!file) return;
-    const apiKey = document.getElementById('gemini-key').value.trim();
-    if (!apiKey) { toast('กรุณากรอก Gemini API Key ก่อน', 'error'); return; }
-    localStorage.setItem(LS.geminiKey, apiKey);
-
-    const resultEl = document.getElementById('ocr-result');
-    resultEl.innerHTML = `
-      <div class="flex items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400 py-6">
-        <div class="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
-        <span id="ocr-status-text">กำลังประมวลผลรูปภาพและตัดวิชาซ้ำ...</span>
-      </div>`;
-
-    // ใช้ 2 โมเดล: 3.7 Flash เป็นหลัก และ 3.5 Flash-Lite เป็นตัวสำรอง
-    const MODELS = [
-      'gemini-3.7-flash',
-      'gemini-3.5-flash-lite'
-    ];
-
-    try {
-      const compressedBlob = await compressImage(file, { maxDim: 1400, quality: 0.75 });
-      const base64 = await fileToBase64(compressedBlob);
-
-      const prompt = `You are an expert OCR parser for Thai secondary school weekly timetables (ตารางเรียน ม.1 - ม.6).
-Extract all unique academic subject-teacher pairs taught during the week.
-
-Rules:
-1. Deduplication Rule: A course slot is only considered a duplicate if BOTH 'subject_code' AND 'teacher_name' are identical. If the same subject code is taught by different teachers, extract both entries.
-2. Exclude non-academic activities: "กิจกรรม", "ที่ปรึกษา", "หน้าเสาธง", "โฮมรูม", "คุณธรรม", "ชุมนุม", "แนะแนว", "ลูกเสือ", "รด.", "จิตอาสา", or lunch breaks.
-3. Clean course codes: remove classroom/building numbers (e.g. 545, BL, ML, CL).
-4. Clean teacher names: retain "ครู" or "Teacher" prefix.
-5. Output strictly a JSON array of objects:
-[
-  {
-    "subject_code": "ค32101",
-    "subject_name": "คณิตศาสตร์พื้นฐาน",
-    "teacher_name": "ครูศิวาพร"
-  }
-]`;
-
-      let parsedItems = null;
-      let lastError = null;
-
-      for (const model of MODELS) {
-        try {
-          const statusText = document.getElementById('ocr-status-text');
-          if (statusText) statusText.textContent = `กำลังสแกนผ่าน AI (${model})...`;
-
-          const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [
-                { text: prompt },
-                { inline_data: { mime_type: 'image/jpeg', data: base64 } }
-              ]}],
-              generationConfig: {
-                response_mime_type: "application/json",
-                temperature: 0.1
-              }
-            })
-          });
-
-          const json = await resp.json();
-          if (json.error) throw new Error(json.error.message || `Error with ${model}`);
-
-          const text = json.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
-          const items = JSON.parse(text);
-
-          if (Array.isArray(items) && items.length > 0) {
-            parsedItems = items;
-            break;
-          }
-        } catch (err) {
-          console.warn(`Model ${model} failed, trying fallback:`, err);
-          lastError = err;
-          await new Promise(r => setTimeout(r, 1000));
-        }
-      }
-
-      if (!parsedItems) {
-        throw lastError || new Error('ไม่สามารถประมวลผลตารางเรียนได้ กรุณาลองใช้รูปที่ชัดเจนขึ้น');
-      }
-
-      // ระบบตัดวิชาซ้ำรอบที่สอง (รหัสวิชา + ครู)
-      const seen = new Set();
-      const uniqueItems = [];
-      for (const item of parsedItems) {
-        const code = (item.subject_code || '').trim();
-        const teacher = (item.teacher_name || '').trim();
-        const key = `${code.toLowerCase()}__${teacher.toLowerCase()}`;
-        if (code && !seen.has(key)) {
-          seen.add(key);
-          uniqueItems.push({
-            subject_code: code,
-            subject_name: (item.subject_name || '').trim(),
-            teacher_name: teacher
-          });
-        }
-      }
-
-      if (!uniqueItems.length) throw new Error('ไม่พบรายวิชาที่อ่านได้ในรูปภาพนี้');
-      renderOcrPreview(uniqueItems);
-    } catch (err) {
-      console.error(err);
-      resultEl.innerHTML = `<div class="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 rounded-xl p-3">${esc(err.message || 'เกิดข้อผิดพลาดในการสแกน')}</div>`;
-    }
-  };
-}
-
-function renderOcrPreview(items) {
-  const resultEl = document.getElementById('ocr-result');
-  resultEl.innerHTML = `
-    <div class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 flex items-center justify-between">
-      <span>พบ ${items.length} วิชาที่ไม่ซ้ำกัน</span>
-      <span class="text-[11px] text-brand-600 dark:text-brand-400">ตรวจสอบก่อนบันทึก</span>
-    </div>
-    <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
-      ${items.map((it, i) => `
-        <div class="flex gap-1.5 items-center bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-xl border border-slate-100 dark:border-slate-800" data-ocr-row="${i}">
-          <input data-ocr-code="${i}" value="${esc(it.subject_code)}" placeholder="รหัสวิชา" class="w-24 shrink-0 px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-800 dark:text-slate-100 outline-none">
-          <input data-ocr-name="${i}" value="${esc(it.subject_name)}" placeholder="ชื่อวิชา" class="flex-1 min-w-0 px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 outline-none">
-          <input data-ocr-teacher="${i}" value="${esc(it.teacher_name)}" placeholder="ครูผู้สอน" class="flex-1 min-w-0 px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-800 dark:text-slate-100 outline-none">
-          <button data-ocr-remove="${i}" class="w-7 h-7 shrink-0 rounded-lg bg-red-50 dark:bg-red-500/10 grid place-items-center text-red-500 dark:text-red-400">${icon('x','w-3.5 h-3.5')}</button>
-        </div>`).join('')}
-    </div>
-    <button id="ocr-save-all" class="w-full mt-4 py-3 rounded-xl bg-brand-600 text-white font-bold text-sm flex items-center justify-center gap-2">
-      ${icon('check','w-4 h-4')} บันทึก ${items.length} วิชาลงห้องเรียน
-    </button>
-  `;
-  renderIcons();
-
-  document.querySelectorAll('[data-ocr-remove]').forEach(b => {
-    b.onclick = () => {
-      const row = document.querySelector(`[data-ocr-row="${b.dataset.ocrRemove}"]`);
-      if (row) row.remove();
-      const remaining = document.querySelectorAll('[data-ocr-row]').length;
-      const saveBtn = document.getElementById('ocr-save-all');
-      if (saveBtn) saveBtn.innerHTML = `${icon('check','w-4 h-4')} บันทึก ${remaining} วิชาลงห้องเรียน`;
-      renderIcons();
-    };
+  const res = await fetch(GOOGLE_DRIVE_SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action: 'upload', fileName: file.name, mimeType: file.type, base64: base64, grade: state.room.grade_level, room: state.room.room_number })
   });
-
-  const saveBtn = document.getElementById('ocr-save-all');
-  saveBtn.onclick = async () => {
-    const rows = [...document.querySelectorAll('[data-ocr-row]')];
-    const payload = rows.map(r => {
-      const i = r.dataset.ocrRow;
-      return {
-        classroom_id: state.classroom.id,
-        subject_code: document.querySelector(`[data-ocr-code="${i}"]`).value.trim(),
-        subject_name: document.querySelector(`[data-ocr-name="${i}"]`).value.trim(),
-        teacher_name: document.querySelector(`[data-ocr-teacher="${i}"]`).value.trim(),
-      };
-    }).filter(p => p.subject_code);
-
-    if (!payload.length) { toast('ไม่มีข้อมูลให้บันทึก', 'error'); return; }
-
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'กำลังบันทึกลงฐานข้อมูล...';
-
-    try {
-      const sb = await ensureSupabase();
-      if (!sb) return;
-      const { error } = await sb.from('subjects').insert(payload);
-      if (error) throw error;
-      toast(`บันทึก ${payload.length} รายวิชาเรียบร้อยแล้ว`, 'success');
-      await loadClassroomData();
-      renderSubjectManager();
-    } catch (e) {
-      console.error(e);
-      toast('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง', 'error');
-      saveBtn.disabled = false;
-      saveBtn.textContent = 'บันทึกทั้งหมดลงห้องเรียน';
-    }
-  };
+  return res.json();
 }
 
-function imageFieldPreview(url, id) {
-  return `<div id="${id}" class="mt-2">${url ? `<img src="${esc(url)}" class="w-16 h-16 object-cover rounded-xl border border-slate-200 dark:border-slate-700">` : ''}</div>`;
-}
+document.getElementById('taskForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!state.isRep) { toast('ต้องอยู่ในโหมดตัวแทนห้องเท่านั้น'); return; }
 
-// Renders the current document-attachment pill inside the assignment form,
-// with a remove (x) button when a file is already attached and none is pending.
-function docAttachmentPill(fileName, fileSizeLabel, fileUrl) {
-  if (!fileUrl) return '';
-  const meta = fileTypeMeta(fileName);
-  return `
-  <div class="flex items-center gap-1.5 pl-2.5 pr-1.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 max-w-full w-fit">
-    ${icon(meta.icon,'w-3.5 h-3.5 shrink-0')}
-    <span class="truncate max-w-[10rem]">${esc(fileName || 'ไฟล์แนบ')}</span>
-    ${fileSizeLabel ? `<span class="text-slate-400 dark:text-slate-500 shrink-0">· ${esc(fileSizeLabel)}</span>` : ''}
-    <button type="button" id="remove-doc-attachment" class="ml-1 w-5 h-5 rounded-md grid place-items-center text-slate-400 hover:text-red-500 dark:hover:text-red-400 shrink-0">${icon('x','w-3 h-3')}</button>
-  </div>`;
-}
-
-function renderSubjectForm() {
-  const s = state.editingSubject || { subject_code:'', subject_name:'', teacher_name:'', teacher_image_url:'', subject_icon_url:'' };
-  document.getElementById('modal-root').innerHTML = modalShell(`
-    <div class="p-5">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="font-extrabold text-lg text-slate-900 dark:text-white">${state.editingSubject ? 'แก้ไขรายวิชา' : 'เพิ่มรายวิชา'}</h3>
-        <button id="modal-close" class="${closeBtnCls}">${icon('x','w-4 h-4')}</button>
-      </div>
-      <div class="space-y-3">
-        <div>
-          <label class="${labelCls}">รหัสวิชา</label>
-          <input id="f-code" value="${esc(s.subject_code)}" placeholder="ค32101" class="${inputCls}">
-        </div>
-        <div>
-          <label class="${labelCls}">ชื่อวิชา</label>
-          <input id="f-name" value="${esc(s.subject_name)}" placeholder="คณิตศาสตร์พื้นฐาน" class="${inputCls}">
-        </div>
-        <div>
-          <label class="${labelCls}">ครูผู้สอน</label>
-          <input id="f-teacher" value="${esc(s.teacher_name)}" placeholder="ครูศิวาพร" class="${inputCls}">
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="${labelCls}">รูปครูผู้สอน (ไม่บังคับ)</label>
-            <input id="f-teacher-image" type="file" accept="image/*" class="w-full text-xs text-slate-500 dark:text-slate-400">
-            ${imageFieldPreview(s.teacher_image_url, 'teacher-image-preview')}
-          </div>
-          <div>
-            <label class="${labelCls}">ไอคอนวิชา (ไม่บังคับ)</label>
-            <input id="f-subject-icon" type="file" accept="image/*" class="w-full text-xs text-slate-500 dark:text-slate-400">
-            ${imageFieldPreview(s.subject_icon_url, 'subject-icon-preview')}
-          </div>
-        </div>
-      </div>
-      <button id="save-subject" class="w-full mt-5 py-3 rounded-xl bg-brand-600 text-white font-bold text-sm flex items-center justify-center gap-2">
-        <span id="save-subject-label">บันทึกรายวิชา</span>
-      </button>
-    </div>
-  `);
-  renderIcons();
-  document.getElementById('modal-close').onclick = () => renderSubjectManager();
-  document.getElementById('modal-backdrop').addEventListener('click', e => { if (e.target.id==='modal-backdrop') renderSubjectManager(); });
-
-  document.getElementById('f-teacher-image').onchange = (e) => {
-    const f = e.target.files[0];
-    if (!f) return;
-    document.getElementById('teacher-image-preview').innerHTML = `<img src="${URL.createObjectURL(f)}" class="w-16 h-16 object-cover rounded-xl border border-slate-200 dark:border-slate-700">`;
-  };
-  document.getElementById('f-subject-icon').onchange = (e) => {
-    const f = e.target.files[0];
-    if (!f) return;
-    document.getElementById('subject-icon-preview').innerHTML = `<img src="${URL.createObjectURL(f)}" class="w-16 h-16 object-cover rounded-xl border border-slate-200 dark:border-slate-700">`;
+  const id = document.getElementById('taskId').value;
+  const dueVal = document.getElementById('taskDue').value;
+  const payload = {
+    classroom_id: state.room.id,
+    subject_id: document.getElementById('taskSubject').value || null,
+    title: document.getElementById('taskTitle').value.trim(),
+    description: document.getElementById('taskDesc').value.trim(),
+    task_type: document.getElementById('taskType').value,
+    due_date: dueVal ? new Date(dueVal).toISOString() : null,
+    estimated_minutes: parseInt(document.getElementById('taskWorkload').value, 10) || 20,
+    images: state.currentTaskImages,
+    attachments: state.currentTaskAttachments,
   };
 
-  const saveSubjectBtn = document.getElementById('save-subject');
-  const saveSubjectLabel = document.getElementById('save-subject-label');
-  saveSubjectBtn.onclick = async () => {
-    const code = document.getElementById('f-code').value.trim();
-    const name = document.getElementById('f-name').value.trim();
-    const teacher = document.getElementById('f-teacher').value.trim();
-    if (!code) { toast('กรุณากรอกรหัสวิชา', 'error'); return; }
-    saveSubjectBtn.disabled = true; saveSubjectLabel.textContent = 'กำลังบันทึก...';
-    try {
-      const sb = await ensureSupabase();
-      if (!sb) return;
+  let error;
+  if (id) ({ error } = await supabase.from('assignments').update(payload).eq('id', id));
+  else ({ error } = await supabase.from('assignments').insert(payload));
 
-      let teacher_image_url = s.teacher_image_url || null;
-      const teacherFile = document.getElementById('f-teacher-image').files[0];
-      if (teacherFile) {
-        saveSubjectLabel.textContent = 'กำลังอัปโหลดรูป...';
-        teacher_image_url = await uploadImage(teacherFile, 'teachers', { maxDim: 500, quality: 0.8, maxBytes: 150*1024 });
-      }
-      let subject_icon_url = s.subject_icon_url || null;
-      const iconFile = document.getElementById('f-subject-icon').files[0];
-      if (iconFile) {
-        saveSubjectLabel.textContent = 'กำลังอัปโหลดไอคอน...';
-        subject_icon_url = await uploadImage(iconFile, 'subjects', { maxDim: 400, quality: 0.8, maxBytes: 120*1024 });
-      }
+  if (error) { toast('บันทึกไม่สำเร็จ: ' + error.message); return; }
 
-      saveSubjectLabel.textContent = 'กำลังบันทึก...';
-      const payload = { subject_code: code, subject_name: name, teacher_name: teacher, teacher_image_url, subject_icon_url };
-      let error;
-      if (state.editingSubject) {
-        ({ error } = await sb.from('subjects').update(payload).eq('id', state.editingSubject.id));
-      } else {
-        ({ error } = await sb.from('subjects').insert({ classroom_id: state.classroom.id, ...payload }));
-      }
-      if (error) { toast('บันทึกไม่สำเร็จ', 'error'); console.error(error); return; }
-      toast('บันทึกรายวิชาแล้ว', 'success');
-      await loadClassroomData();
-      renderSubjectManager();
-    } catch (e) {
-      console.error(e);
-      toast(e.message === 'no supabase client' ? 'เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง' : 'อัปโหลดรูปไม่สำเร็จ ลองใหม่อีกครั้ง', 'error');
-    } finally {
-      if (saveSubjectBtn.isConnected) { saveSubjectBtn.disabled = false; saveSubjectLabel.textContent = 'บันทึกรายวิชา'; }
-    }
-  };
-}
+  closeModal('taskModalOverlay');
+  await loadEverything();
+  toast('บันทึกการบ้านเรียบร้อย');
+});
 
-// ----- Assignment form -----
-function renderAssignmentForm() {
-  const a = state.editingAssignment || { title:'', description:'', task_type:'INDIVIDUAL', subject_id:'', due_date:'', created_by:'', image_url:'', file_url:'', file_name:'', file_size_label:'', workload_type:null, workload_minutes:null };
-  const dueLocal = a.due_date ? new Date(new Date(a.due_date).getTime() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16) : '';
-  document.getElementById('modal-root').innerHTML = modalShell(`
-    <div class="p-5">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="font-extrabold text-lg text-slate-900 dark:text-white">${state.editingAssignment ? 'แก้ไขการบ้าน' : 'เพิ่มการบ้านใหม่'}</h3>
-        <button id="modal-close" class="${closeBtnCls}">${icon('x','w-4 h-4')}</button>
-      </div>
-      <div class="space-y-3">
-        <div>
-          <label class="${labelCls}">วิชา</label>
-          <select id="f-subject" class="${inputCls}">
-            <option value="">— ไม่ระบุวิชา —</option>
-            ${state.subjects.map(s => `<option value="${s.id}" ${a.subject_id===s.id?'selected':''}>${esc(s.subject_code)} · ${esc(s.subject_name||'')}</option>`).join('')}
-          </select>
-        </div>
-        <div>
-          <label class="${labelCls}">ชื่องาน</label>
-          <input id="f-title" value="${esc(a.title)}" placeholder="แบบฝึกหัดบทที่ 3 หน้า 45" class="${inputCls}">
-        </div>
-        <div>
-          <label class="${labelCls}">รายละเอียด</label>
-          <textarea id="f-desc" rows="5" placeholder="คำสั่งงานเพิ่มเติม..." class="${inputCls} min-h-[120px] resize-y">${esc(a.description)}</textarea>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="${labelCls}">ประเภทงาน</label>
-            <select id="f-type" class="${inputCls}">
-              <option value="INDIVIDUAL" ${a.task_type==='INDIVIDUAL'?'selected':''}>งานเดี่ยว</option>
-              <option value="GROUP" ${a.task_type==='GROUP'?'selected':''}>งานกลุ่ม</option>
-            </select>
-          </div>
-          <div>
-            <label class="${labelCls}">กำหนดส่ง</label>
-            <input id="f-due" type="datetime-local" value="${dueLocal}" class="${inputCls} num">
-          </div>
-        </div>
-        <div>
-          <label class="${labelCls}">ชื่อผู้โพสต์ (ตัวแทนห้อง)</label>
-          <input id="f-creator" value="${esc(a.created_by)}" placeholder="เช่น เลขาห้อง" class="${inputCls}">
-        </div>
-        <div>
-          <label class="${labelCls}">ระดับภาระงาน — Quick Tag (ไม่บังคับ)</label>
-          <div class="grid grid-cols-3 gap-2" id="workload-tag-group">
-            ${['short','medium','large'].map(t => {
-              const labels = { short:'สั้น ~20น.', medium:'ปานกลาง ~45น.', large:'ใหญ่ ~1.5ชม.+' };
-              const active = a.workload_type === t;
-              return `<button type="button" data-tag="${t}" class="workload-tag-btn py-2 rounded-xl border text-xs font-bold ${active ? 'bg-brand-600 text-white border-brand-600' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'}">${labels[t]}</button>`;
-            }).join('')}
-          </div>
-          <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">ไม่เลือก = ให้ระบบวิเคราะห์อัตโนมัติจากชื่อ/รายละเอียดงาน</p>
-        </div>
-        <div>
-          <label class="${labelCls}">รูปภาพประกอบ (ไม่บังคับ)</label>
-          <input id="f-image" type="file" accept="image/*" class="w-full text-sm text-slate-500 dark:text-slate-400">
-          ${imageFieldPreview(a.image_url, 'assignment-image-preview')}
-        </div>
-        <div>
-          <label class="${labelCls}">ไฟล์แนบ (PDF / Word / PowerPoint / Excel / ZIP ไม่บังคับ)</label>
-          <input id="f-doc" type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip" class="w-full text-sm text-slate-500 dark:text-slate-400">
-          <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">ไฟล์ขนาดไม่เกิน 15 MB</p>
-          <div id="doc-attachment-preview" class="mt-2">${docAttachmentPill(a.file_name, a.file_size_label, a.file_url)}</div>
-        </div>
-      </div>
-      <button id="save-assignment" class="w-full mt-5 py-3 rounded-xl bg-brand-600 text-white font-bold text-sm flex items-center justify-center gap-2">
-        <span id="save-assignment-label">บันทึกการบ้าน</span>
-      </button>
-    </div>
-  `, { wide:true });
-  renderIcons();
-  document.getElementById('modal-close').onclick = closeModal;
-  document.getElementById('modal-backdrop').addEventListener('click', e => { if (e.target.id==='modal-backdrop') closeModal(); });
+document.getElementById('fabPlus').addEventListener('click', () => openTaskModal(null));
 
-  document.getElementById('f-image').onchange = (e) => {
-    const f = e.target.files[0];
-    if (!f) return;
-    document.getElementById('assignment-image-preview').innerHTML = `<img src="${URL.createObjectURL(f)}" class="w-16 h-16 object-cover rounded-xl border border-slate-200 dark:border-slate-700">`;
-  };
+/* ==============================================================================
+   AI CAMERA SNAP & AUTO-FILL
+   ============================================================================== */
+document.getElementById('fabCamera').addEventListener('click', () => document.getElementById('cameraInput').click());
 
-  // Quick Tag picker: click to select, click again to deselect (back to auto mode).
-  let selectedWorkloadType = a.workload_type || null;
-  function refreshWorkloadTagButtons() {
-    document.querySelectorAll('.workload-tag-btn').forEach(b => {
-      const active = b.dataset.tag === selectedWorkloadType;
-      b.className = `workload-tag-btn py-2 rounded-xl border text-xs font-bold ${active ? 'bg-brand-600 text-white border-brand-600' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'}`;
-    });
-  }
-  document.querySelectorAll('.workload-tag-btn').forEach(b => b.onclick = () => {
-    selectedWorkloadType = (selectedWorkloadType === b.dataset.tag) ? null : b.dataset.tag;
-    refreshWorkloadTagButtons();
-  });
+document.getElementById('cameraInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
 
-  let removeDocAttachment = false;
-  function wireDocRemoveBtn() {
-    const removeBtn = document.getElementById('remove-doc-attachment');
-    if (removeBtn) removeBtn.onclick = () => {
-      removeDocAttachment = true;
-      document.getElementById('f-doc').value = '';
-      document.getElementById('doc-attachment-preview').innerHTML = '';
-    };
-  }
-  wireDocRemoveBtn();
+  const base64DataUrl = await compressImageToBase64(file, 250, 1400);
+  document.getElementById('aiReviewImg').src = base64DataUrl;
+  document.getElementById('aiReviewFields').classList.add('hidden');
+  document.getElementById('aiReviewStatus').classList.remove('hidden');
+  openModal('aiReviewOverlay');
+  state.aiPendingImage = base64DataUrl;
 
-  document.getElementById('f-doc').onchange = (e) => {
-    const f = e.target.files[0];
-    const previewEl = document.getElementById('doc-attachment-preview');
-    if (!f) return;
-    if (f.size > 15 * 1024 * 1024) {
-      toast('ไฟล์แนบมีขนาดเกิน 15 MB', 'error');
-      e.target.value = '';
-      return;
-    }
-    removeDocAttachment = false;
-    const meta = fileTypeMeta(f.name);
-    previewEl.innerHTML = `
-      <div class="flex items-center gap-1.5 pl-2.5 pr-1.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 max-w-full w-fit">
-        ${icon(meta.icon,'w-3.5 h-3.5 shrink-0')}
-        <span class="truncate max-w-[10rem]">${esc(f.name)}</span>
-        <span class="text-slate-400 dark:text-slate-500 shrink-0">· ${formatFileSize(f.size)}</span>
-      </div>`;
-    renderIcons();
-  };
+  const rawBase64 = base64DataUrl.split(',')[1];
+  const prompt = `วิเคราะห์รูปภาพการบ้านนี้ แล้วตอบกลับเป็น JSON ภาษาไทยตามโครงสร้างนี้เท่านั้น:
+{
+  "subjectCode": "รหัสวิชา (ถ้ามี เช่น ส32101)",
+  "subjectName": "ชื่อวิชา (ถ้ามี เช่น สังคมศึกษา)",
+  "title": "หัวข้อหรือชื่องานสั้นๆ",
+  "description": "คำสั่งงานหรือรายละเอียดทั้งหมด"
+}`;
 
-  const btn = document.getElementById('save-assignment');
-  const label = document.getElementById('save-assignment-label');
-  btn.onclick = async () => {
-    const title = document.getElementById('f-title').value.trim();
-    const due = document.getElementById('f-due').value;
-    if (!title) { toast('กรุณากรอกชื่องาน', 'error'); return; }
-    if (!due) { toast('กรุณาเลือกกำหนดส่ง', 'error'); return; }
-
-    btn.disabled = true; label.textContent = 'กำลังบันทึก...';
-
-    try {
-      const sb = await ensureSupabase();
-      if (!sb) return;
-
-      let image_url = a.image_url || null;
-      const fileInput = document.getElementById('f-image');
-      if (fileInput.files[0]) {
-        label.textContent = 'กำลังอัปโหลดรูป...';
-        try {
-          image_url = await uploadImage(fileInput.files[0], 'assignments', { maxDim: 1200, quality: 0.75, maxBytes: 250*1024 });
-        } catch (err) {
-          console.error(err);
-          toast('อัปโหลดรูปไม่สำเร็จ', 'error');
-          return;
-        }
-        label.textContent = 'กำลังบันทึก...';
-      }
-
-      let file_url = a.file_url || null;
-      let file_name = a.file_name || null;
-      let file_size_label = a.file_size_label || null;
-      const docInput = document.getElementById('f-doc');
-      if (docInput.files[0]) {
-        const df = docInput.files[0];
-        if (df.size > 15 * 1024 * 1024) { toast('ไฟล์แนบมีขนาดเกิน 15 MB', 'error'); return; }
-        label.textContent = 'กำลังอัปโหลดไฟล์แนบ...';
-        try {
-          const res = await uploadFileToGoogleDrive(df, { isImage: false, category: 'เอกสารดาวน์โหลด', roomFolder: getRoomFolder() });
-          file_url = res.downloadUrl || res.url;
-          file_name = res.fileName || df.name;
-          file_size_label = formatFileSize(df.size);
-        } catch (err) {
-          console.error(err);
-          toast(err.message || 'อัปโหลดไฟล์แนบไม่สำเร็จ', 'error');
-          return;
-        }
-        label.textContent = 'กำลังบันทึก...';
-      } else if (removeDocAttachment) {
-        file_url = null; file_name = null; file_size_label = null;
-      }
-
-      const payload = {
-        classroom_id: state.classroom.id,
-        subject_id: document.getElementById('f-subject').value || null,
-        title,
-        description: document.getElementById('f-desc').value.trim(),
-        task_type: document.getElementById('f-type').value,
-        due_date: new Date(due).toISOString(),
-        created_by: document.getElementById('f-creator').value.trim(),
-        image_url,
-        file_url,
-        file_name,
-        file_size_label,
-        workload_type: selectedWorkloadType,
-        workload_minutes: selectedWorkloadType ? WORKLOAD_PRESETS[selectedWorkloadType].minutes : null,
-      };
-
-      let error;
-      if (state.editingAssignment) {
-        ({ error } = await sb.from('assignments').update(payload).eq('id', state.editingAssignment.id));
-      } else {
-        ({ error } = await sb.from('assignments').insert(payload));
-      }
-      // The assignments table may not have the workload_type/workload_minutes
-      // columns yet (see migration note near GOOGLE_DRIVE_SCRIPT_URL) — if that's
-      // the only problem, retry without them so saving still succeeds; the Quick
-      // Tag then simply falls back to auto keyword-classification for everyone.
-      if (error && /column|schema cache/i.test(error.message || '')) {
-        const fallbackPayload = { ...payload };
-        delete fallbackPayload.workload_type;
-        delete fallbackPayload.workload_minutes;
-        if (state.editingAssignment) {
-          ({ error } = await sb.from('assignments').update(fallbackPayload).eq('id', state.editingAssignment.id));
-        } else {
-          ({ error } = await sb.from('assignments').insert(fallbackPayload));
-        }
-        if (!error) toast('บันทึกสำเร็จ (Quick Tag ยังไม่ถูกบันทึกถาวร — โปรดเพิ่มคอลัมน์ในฐานข้อมูล)', 'default');
-      }
-      if (error) { toast('บันทึกไม่สำเร็จ', 'error'); console.error(error); return; }
-      toast('บันทึกการบ้านแล้ว', 'success');
-      closeModal();
-      await loadClassroomData();
-    } catch (e) {
-      console.error(e);
-      toast('เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง', 'error');
-    } finally {
-      if (btn.isConnected) { btn.disabled = false; label.textContent = 'บันทึกการบ้าน'; }
-    }
-  };
-}
-
-function renderImagePreviewModal(url) {
-  document.getElementById('modal-root').innerHTML = `
-    <div class="fixed inset-0 z-[300] bg-black/85 flex items-center justify-center p-4" id="img-backdrop">
-      <button id="img-close" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 text-white grid place-items-center">${icon('x','w-5 h-5')}</button>
-      <img src="${esc(url)}" class="max-w-full max-h-full rounded-xl object-contain rise-in">
-    </div>`;
-  renderIcons();
-  document.getElementById('img-close').onclick = closeModal;
-  document.getElementById('img-backdrop').addEventListener('click', e => { if (e.target.id==='img-backdrop') closeModal(); });
-}
-
-function promptNewClassroomPasscode(g, r) {
-  document.getElementById('modal-root').innerHTML = modalShell(`
-    <div class="p-5">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="font-extrabold text-lg text-slate-900 dark:text-white">ยังไม่มีห้องนี้ในระบบ</h3>
-        <button id="modal-close" class="${closeBtnCls}">${icon('x','w-4 h-4')}</button>
-      </div>
-      <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">ตั้งรหัสผ่านสำหรับตัวแทนห้อง ${GRADE_TH[g]}/${r} เพื่อสร้างห้องนี้ขึ้นมาใหม่ (ใช้สำหรับจัดการวิชาและการบ้านในภายหลัง)</p>
-      <input id="new-passcode" type="text" maxlength="10" placeholder="ตั้งรหัสผ่าน 4-10 ตัวอักษร" class="${inputCls} text-center tracking-widest font-bold num text-lg py-3">
-      <button id="create-classroom" class="w-full mt-4 py-3 rounded-xl bg-brand-600 text-white font-bold text-sm">สร้างห้องเรียน</button>
-    </div>
-  `);
-  renderIcons();
-  document.getElementById('modal-close').onclick = closeModal;
-  document.getElementById('modal-backdrop').addEventListener('click', e => { if (e.target.id==='modal-backdrop') closeModal(); });
-  const createBtn = document.getElementById('create-classroom');
-  createBtn.onclick = async () => {
-    const code = document.getElementById('new-passcode').value.trim();
-    if (code.length < 4) { toast('รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร', 'error'); return; }
-    const originalLabel = createBtn.textContent;
-    createBtn.disabled = true; createBtn.textContent = 'กำลังสร้างห้อง...';
-    try {
-      const sb = await ensureSupabase();
-      if (!sb) return;
-      const { data, error } = await sb.rpc('get_or_create_classroom', { p_grade: g, p_room: r, p_passcode: code });
-      if (error) { toast('สร้างห้องไม่สำเร็จ', 'error'); console.error(error); return; }
-      const row = Array.isArray(data) ? data[0] : data;
-      state.classroom = { id: row.id, grade_level: g, room_number: r };
-      localStorage.setItem(LS.classroom, JSON.stringify(state.classroom));
-      // The creator already knows the passcode they just set — unlock rep mode immediately.
-      setRepUnlocked(row.id);
-      state.repMode = true;
-      closeModal();
-      toast('สร้างห้องเรียนแล้ว จำรหัสผ่านนี้ไว้นะ', 'success');
-      state.view = 'dashboard';
-      await loadClassroomData();
-    } catch (e) {
-      console.error(e);
-      toast('เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง', 'error');
-    } finally {
-      if (createBtn.isConnected) { createBtn.disabled = false; createBtn.textContent = originalLabel; }
-    }
-  };
-}
-
-// ---------- RENDER / ROUTER ----------------------------------------------------
-function render() {
-  const app = document.getElementById('app');
-  if (state.view === 'picker') app.innerHTML = ViewPicker();
-  else if (state.view === 'dashboard' && state.classroom) app.innerHTML = ViewDashboard();
-  else app.innerHTML = '';
-  renderIcons();
-  wireEvents();
-}
-
-function wireEvents() {
-  const themeBtn = document.getElementById('theme-toggle');
-  if (themeBtn) themeBtn.onclick = toggleTheme;
-
-  if (state.view === 'picker') {
-    let g = null, r = null;
-    document.querySelectorAll('.grade-btn').forEach(b => b.onclick = () => {
-      g = Number(b.dataset.grade);
-      document.querySelectorAll('.grade-btn').forEach(x => x.dataset.active = (x===b));
-      checkReady();
-    });
-    document.querySelectorAll('.room-btn').forEach(b => b.onclick = () => {
-      r = Number(b.dataset.room);
-      document.querySelectorAll('.room-btn').forEach(x => x.dataset.active = (x===b));
-      checkReady();
-    });
-    function checkReady() {
-      document.getElementById('confirm-picker').disabled = !(g && r);
-    }
-    document.getElementById('confirm-picker').onclick = async () => {
-      if (!g || !r) return;
-      const btn = document.getElementById('confirm-picker');
-      const originalLabel = btn.textContent;
-      btn.disabled = true; btn.textContent = 'กำลังตรวจสอบ...';
-      try {
-        const sb = await ensureSupabase();
-        if (!sb) return;
-        const { data: existing, error } = await sb.from('classrooms_public').select('*').eq('grade_level', g).eq('room_number', r).maybeSingle();
-        if (error) { toast('เชื่อมต่อฐานข้อมูลไม่สำเร็จ ลองใหม่อีกครั้ง', 'error'); console.error(error); return; }
-        if (existing) {
-          state.classroom = { id: existing.id, grade_level: g, room_number: r };
-          localStorage.setItem(LS.classroom, JSON.stringify(state.classroom));
-          state.repMode = isRepUnlocked(existing.id);
-          state.view = 'dashboard';
-          await loadClassroomData();
-        } else {
-          promptNewClassroomPasscode(g, r);
-        }
-      } catch (e) {
-        console.error(e);
-        toast('เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง', 'error');
-      } finally {
-        if (btn.isConnected) { btn.disabled = false; btn.textContent = originalLabel; }
-      }
-    };
-  }
-
-  if (state.view === 'dashboard') {
-    if (state.repMode && !isRepUnlocked(state.classroom.id)) state.repMode = false;
-
-    document.getElementById('refresh-btn').onclick = async (e) => {
-      const btn = e.currentTarget;
-      btn.disabled = true;
-      const iconEl = btn.querySelector('[data-lucide]');
-      if (iconEl) iconEl.classList.add('spin');
-      try {
-        await loadClassroomData();
-        toast('อัปเดตข้อมูลล่าสุดแล้ว', 'success');
-      } catch (err) {
-        console.error(err);
-        toast('รีเฟรชไม่สำเร็จ ลองใหม่อีกครั้ง', 'error');
-      } finally {
-        if (btn.isConnected) btn.disabled = false;
-      }
-    };
-
-    document.getElementById('line-share-btn').onclick = async () => {
-      const summary = buildLineShareSummary();
-      const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(summary)}`;
-      try {
-        window.open(lineUrl, '_blank', 'noopener');
-      } catch (e) {
-        // Popup blocked or unavailable — fall back to clipboard below.
-      }
-      try {
-        await navigator.clipboard.writeText(summary);
-        toast('คัดลอกสรุปการบ้านแล้ว วางในแชท LINE ได้เลย', 'success');
-      } catch (e) {
-        toast('เปิด LINE เพื่อแชร์สรุปการบ้านแล้ว', 'success');
-      }
-    };
-
-    document.getElementById('switch-room').onclick = async () => {
-      const ok = await confirmDialog({ title:'เปลี่ยนห้องเรียน', message:'ต้องการออกจากห้องนี้และเลือกห้องใหม่หรือไม่?', confirmLabel:'เปลี่ยนห้อง' });
-      if (!ok) return;
-      localStorage.removeItem(LS.classroom);
-      state.classroom = null; state.repMode = false;
-      state.view = 'picker'; render();
-    };
-    document.getElementById('rep-mode-btn').onclick = () => {
-      if (state.repMode) { state.repMode = false; render(); return; }
-      if (isRepUnlocked(state.classroom.id)) { state.repMode = true; render(); return; }
-      renderRepGate();
-    };
-    document.querySelectorAll('[data-desc-toggle]').forEach(b => b.onclick = () => {
-      const id = b.dataset.descToggle;
-      if (state.expandedDescriptions.has(id)) state.expandedDescriptions.delete(id);
-      else state.expandedDescriptions.add(id);
-      render();
-    });
-    document.getElementById('workload-toggle-btn').onclick = () => {
-      state.showWorkload = !state.showWorkload;
-      try { localStorage.setItem(LS.showWorkload, state.showWorkload ? '1' : '0'); } catch(e) {}
-      render();
-    };
-    document.getElementById('smart-sort-toggle').onclick = () => {
-      state.smartSort = !state.smartSort;
-      try { localStorage.setItem(LS.smartSort, state.smartSort ? '1' : '0'); } catch(e) {}
-      render();
-    };
-    document.getElementById('search-input').oninput = (e) => { state.search = e.target.value; render(); document.getElementById('search-input')?.focus(); };
-    document.querySelectorAll('.tab-btn').forEach(b => b.onclick = () => { state.filter = b.dataset.tab; render(); });
-    document.querySelectorAll('.subj-filter-btn').forEach(b => b.onclick = () => { state.subjectFilter = b.dataset.subj; render(); });
-
-    document.querySelectorAll('[data-toggle-done]').forEach(b => b.onclick = () => {
-      const id = b.dataset.toggleDone;
-      if (state.doneIds.has(id)) state.doneIds.delete(id); else state.doneIds.add(id);
-      saveDone();
-      render();
-    });
-    document.querySelectorAll('[data-preview]').forEach(b => b.onclick = () => renderImagePreviewModal(b.dataset.preview));
-
-    const addBtn = document.getElementById('add-assignment-btn');
-    if (addBtn) addBtn.onclick = () => { state.editingAssignment = null; renderAssignmentForm(); };
-    const mgBtn = document.getElementById('manage-subjects-btn');
-    if (mgBtn) mgBtn.onclick = renderSubjectManager;
-
-    document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => {
-      state.editingAssignment = state.assignments.find(a => a.id === b.dataset.edit);
-      renderAssignmentForm();
-    });
-    document.querySelectorAll('[data-delete]').forEach(b => b.onclick = async () => {
-      const ok = await confirmDialog({ title:'ลบการบ้าน', message:'ต้องการลบการบ้านนี้ออกจากห้องหรือไม่? ไม่สามารถกู้คืนได้', confirmLabel:'ลบการบ้าน', danger:true });
-      if (!ok) return;
-      b.disabled = true;
-      try {
-        const target = state.assignments.find(a => a.id === b.dataset.delete);
-        // Delete any attached Drive files first, then remove the Supabase row —
-        // this order avoids leaving an assignment with a dangling file reference
-        // if something goes wrong partway through.
-        if (target) await deleteAssignmentDriveFiles(target);
-
-        const sb = await ensureSupabase();
-        if (!sb) return;
-        const { error } = await sb.from('assignments').delete().eq('id', b.dataset.delete);
-        if (error) { toast('ลบไม่สำเร็จ', 'error'); console.error(error); return; }
-        toast('ลบการบ้านแล้ว', 'success');
-        await loadClassroomData();
-      } catch (e) {
-        console.error(e);
-        toast('เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง', 'error');
-      } finally {
-        if (b.isConnected) b.disabled = false;
-      }
-    });
-  }
-}
-
-// ---------- BOOT ----------------------------------------------------------
-function boot() {
   try {
-    loadLocal();
-    initSupabase();
-    if (!state.supabase) {
-      // CDN script may not have finished loading yet on slower networks —
-      // give it one short retry before surfacing an error toast.
-      setTimeout(() => {
-        initSupabase();
-        if (!state.supabase) {
-          toast('เชื่อมต่อ Supabase ไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วรีเฟรชหน้านี้', 'error');
-        }
-        continueBoot();
-      }, 400);
-      return;
-    }
-    continueBoot();
-  } catch (e) {
-    console.error('Boot failed:', e);
-    state.view = 'picker';
-    render();
-  }
-}
+    const res = await fetch(GOOGLE_DRIVE_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'geminiScan', imageBase64: rawBase64, mimeType: 'image/jpeg', prompt: prompt })
+    });
+    const json = await res.json();
+    const result = json.data || JSON.parse(json.text || '{}');
 
-function continueBoot() {
-  if (state.classroom) {
-    state.repMode = isRepUnlocked(state.classroom.id);
-    state.view = 'dashboard';
-    loadClassroomData();
-  } else {
-    state.view = 'picker';
-    render();
-  }
-}
+    document.getElementById('aiReviewStatus').classList.add('hidden');
+    document.getElementById('aiReviewFields').classList.remove('hidden');
 
-document.addEventListener('DOMContentLoaded', boot);
+    const matched = state.subjects.find(s =>
+      (result.subjectCode && s.subject_code === result.subjectCode) ||
+      (result.subjectName && s.subject_name === result.subjectName)
+    );
+    if (matched) document.getElementById('aiSubject').value = matched.id;
+    document.getElementById('aiTitle').value = result.title || '';
+    document.getElementById('aiDesc').value = result.description || '';
+  } catch (err) {
+    document.getElementById('aiReviewStatus').innerHTML = '<span class="text-rose-600 font-medium">AI วิเคราะห์รูปภาพไม่สำเร็จ กรุณากรอกเอง</span>';
+    document.getElementById('aiReviewFields').classList.remove('hidden');
+  }
+});
+
+document.getElementById('btnAiUseData').addEventListener('click', () => {
+  closeModal('aiReviewOverlay');
+  openTaskModal(null);
+  document.getElementById('taskSubject').value = document.getElementById('aiSubject').value;
+  document.getElementById('taskTitle').value = document.getElementById('aiTitle').value;
+  document.getElementById('taskDesc').value = document.getElementById('aiDesc').value;
+  if (state.aiPendingImage) {
+    state.currentTaskImages.push({ url: state.aiPendingImage, type: 'image/jpeg' });
+    renderTaskImagePreview();
+  }
+});
+
+/* ==============================================================================
+   INIT
+   ============================================================================== */
+async function init() {
+  lucide.createIcons();
+  const restored = await restoreRoom();
+  if (!restored) openModal('pickerOverlay');
+  checkLockoutState();
+}
+init();
 </script>
 </body>
 </html>
