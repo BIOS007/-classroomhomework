@@ -155,6 +155,54 @@
   .modal-scroll { overscroll-behavior: contain; touch-action: pan-y; }
   .app-main { padding-bottom: calc(7rem + var(--safe-bottom)); }
 
+  .deadline-group { min-width:0; }
+  .deadline-group + .deadline-group { margin-top:1rem; }
+  .deadline-heading {
+    display:flex; align-items:center; gap:.55rem; margin:0 0 .65rem; padding:0 .15rem;
+    color:rgb(100 116 139); font-size:.7rem; font-weight:800; letter-spacing:.035em;
+  }
+  .deadline-heading::after { content:''; height:1px; flex:1; background:rgba(148,163,184,.22); }
+  .dark .deadline-heading { color:rgb(148 163 184); }
+  .deadline-count {
+    display:inline-flex; align-items:center; justify-content:center; min-width:1.65rem; height:1.4rem;
+    padding:0 .45rem; border-radius:999px; background:rgba(148,163,184,.12); font-size:.65rem;
+  }
+
+  .skeleton-card { overflow:hidden; position:relative; }
+  .skeleton-line, .skeleton-block { background:rgba(148,163,184,.16); border-radius:.75rem; }
+  .dark .skeleton-line, .dark .skeleton-block { background:rgba(100,116,139,.18); }
+  .skeleton-card::after {
+    content:''; position:absolute; inset:0; transform:translateX(-100%);
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.38),transparent);
+    animation:skeletonShimmer 1.25s infinite; pointer-events:none;
+  }
+  .dark .skeleton-card::after { background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent); }
+  @keyframes skeletonShimmer { 100% { transform:translateX(100%); } }
+
+  .network-banner {
+    position:sticky; top:calc(3.9rem + var(--safe-top)); z-index:25;
+    max-width:80rem; margin:.5rem auto 0; padding:0 1rem;
+  }
+  .network-banner-inner {
+    display:flex; align-items:center; justify-content:space-between; gap:.75rem;
+    min-height:44px; padding:.55rem .75rem .55rem .9rem; border-radius:1rem;
+    background:rgba(255,247,237,.96); color:rgb(154 52 18); border:1px solid rgba(251,146,60,.28);
+    box-shadow:0 8px 24px rgba(15,23,42,.08); backdrop-filter:blur(12px);
+  }
+  .dark .network-banner-inner { background:rgba(67,20,7,.94); color:rgb(254 215 170); border-color:rgba(251,146,60,.22); }
+
+  .detail-sheet-panel {
+    max-height:min(88dvh,760px); overflow-y:auto; overscroll-behavior:contain;
+    border-radius:1.75rem 1.75rem 0 0;
+  }
+  @media (min-width:640px) { .detail-sheet-panel { border-radius:1.75rem; max-height:min(86dvh,780px); } }
+  .detail-meta-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.65rem; }
+  .detail-meta-item { padding:.75rem; border-radius:1rem; background:rgba(148,163,184,.08); min-width:0; }
+  .detail-attachment {
+    display:flex; align-items:center; gap:.65rem; min-height:44px; padding:.6rem .75rem; border-radius:1rem;
+    background:rgba(148,163,184,.08); border:1px solid rgba(148,163,184,.14);
+  }
+
 
   /* Modern EdTech Dashboard visual system */
   body {
@@ -285,6 +333,16 @@
       </div>
     </div>
   </header>
+
+  <div id="networkBanner" class="network-banner hidden" role="status" aria-live="polite">
+    <div class="network-banner-inner">
+      <div class="flex items-center gap-2 min-w-0">
+        <i data-lucide="wifi-off" class="w-4 h-4 shrink-0"></i>
+        <span id="networkMessage" class="text-xs font-semibold truncate">ออฟไลน์ — แสดงข้อมูลล่าสุดที่มีอยู่</span>
+      </div>
+      <button id="btnNetworkRetry" type="button" class="shrink-0 px-3 min-h-[44px] rounded-xl bg-white/80 dark:bg-slate-900/60 text-xs font-bold border border-orange-200/70 dark:border-orange-800/50">ลองใหม่</button>
+    </div>
+  </div>
 
   <main class="app-main dashboard-shell mx-auto px-4 sm:px-6 w-full min-w-0 pt-4 sm:pt-5">
     <section class="hero-panel rounded-3xl p-5 sm:p-6 text-white mb-3.5 lg:mb-5">
@@ -521,6 +579,20 @@
   </div>
 </div>
 
+<!-- ============================= TASK DETAIL BOTTOM SHEET ============================= -->
+<div id="taskDetailOverlay" class="hidden fixed inset-0 z-[55] bg-slate-950/65 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4">
+  <div class="detail-sheet-panel modal-panel w-full sm:max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl safe-bottom" role="dialog" aria-modal="true" aria-labelledby="taskDetailTitle">
+    <div class="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 px-4 sm:px-5 py-3 safe-top">
+      <div class="drag-indicator sm:hidden"></div>
+      <div class="flex items-center justify-between gap-3">
+        <div class="min-w-0"><p class="text-[10px] font-bold uppercase tracking-wider text-brand-500">Task details</p><h2 id="taskDetailTitle" class="font-display font-extrabold text-base sm:text-lg truncate">รายละเอียดการบ้าน</h2></div>
+        <button id="btnTaskDetailClose" type="button" aria-label="ปิดรายละเอียด" class="w-11 h-11 shrink-0 flex items-center justify-center rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+    </div>
+    <div id="taskDetailContent" class="p-4 sm:p-5"></div>
+  </div>
+</div>
+
 <!-- ============================= LIGHTBOX ============================= -->
 <div id="lightboxOverlay" class="hidden fixed inset-0 z-[60] bg-black/90 backdrop-blur flex items-center justify-center px-2 safe-modal">
   <button id="lightboxClose" class="absolute top-[calc(1rem+var(--safe-top))] right-[calc(1rem+var(--safe-right))] w-11 h-11 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center">
@@ -535,7 +607,7 @@
   <img id="lightboxImg" class="max-w-[92vw] max-h-[86vh] object-contain rounded-lg shadow-2xl" alt="ภาพขยาย">
 </div>
 
-<div id="toast" class="hidden fixed safe-toast left-1/2 -translate-x-1/2 z-[70] bg-slate-900/95 text-white text-xs px-4 py-2.5 rounded-full shadow-2xl font-medium backdrop-blur"></div>
+<div id="toast" role="status" aria-live="polite" class="hidden fixed safe-toast left-1/2 -translate-x-1/2 z-[70] max-w-[calc(100vw-2rem)] bg-slate-900/95 text-white text-xs px-3 py-2 rounded-2xl shadow-2xl font-medium backdrop-blur"></div>
 
 <script>
 /* ==============================================================================
@@ -740,6 +812,8 @@ const state = {
   lightboxImages: [],
   lightboxIndex: 0,
   aiPendingImage: null,
+  activeDetailTaskId: null,
+  pendingDeletes: new Map(),
 };
 
 function persistFilterState() {
@@ -754,12 +828,34 @@ function haptic(ms = 10) {
   try { navigator.vibrate?.(ms); } catch (error) { /* vibration is optional */ }
 }
 
-function toast(msg) {
+function toast(msg, actionLabel = '', actionCallback = null, duration = 2500) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
+  clearElement(t);
+
+  const row = document.createElement('div');
+  row.className = 'flex items-center gap-2 min-w-0';
+  const message = document.createElement('span');
+  message.className = 'min-w-0 break-words';
+  message.textContent = String(msg || '');
+  row.appendChild(message);
+
+  if (actionLabel && typeof actionCallback === 'function') {
+    const action = document.createElement('button');
+    action.type = 'button';
+    action.className = 'shrink-0 min-h-[36px] min-w-0 px-2.5 rounded-xl bg-white/12 hover:bg-white/20 text-blue-200 font-extrabold';
+    action.textContent = actionLabel;
+    action.addEventListener('click', () => {
+      clearTimeout(t._timer);
+      t.classList.add('hidden');
+      actionCallback();
+    }, { once:true });
+    row.appendChild(action);
+  }
+
+  t.appendChild(row);
   t.classList.remove('hidden');
   clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.add('hidden'), 2500);
+  t._timer = setTimeout(() => t.classList.add('hidden'), duration);
 }
 
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
@@ -885,9 +981,67 @@ document.getElementById('btnLineBot').addEventListener('click', () => {
 });
 
 /* ==============================================================================
+   NETWORK + LOADING EXPERIENCE
+   ============================================================================== */
+function setNetworkBanner(visible, message = 'ออฟไลน์ — แสดงข้อมูลล่าสุดที่มีอยู่', canRetry = true) {
+  const banner = document.getElementById('networkBanner');
+  const text = document.getElementById('networkMessage');
+  const retry = document.getElementById('btnNetworkRetry');
+  if (!banner || !text || !retry) return;
+  text.textContent = message;
+  retry.classList.toggle('hidden', !canRetry);
+  banner.classList.toggle('hidden', !visible);
+  lucide.createIcons();
+}
+
+function showTaskSkeletons(count = 3) {
+  const container = document.getElementById('taskList');
+  const empty = document.getElementById('emptyState');
+  if (!container || state.tasks.length > 0) return;
+  if (empty) empty.classList.add('hidden');
+  clearElement(container);
+  const fragment = document.createDocumentFragment();
+  for (let i = 0; i < count; i++) {
+    const card = document.createElement('div');
+    card.className = 'skeleton-card task-card bg-white/95 dark:bg-slate-900/95 rounded-3xl border border-slate-200 dark:border-slate-800 p-4 min-w-0';
+    const media = document.createElement('div');
+    media.className = 'skeleton-block h-36 sm:h-44 w-full mb-4';
+    const line1 = document.createElement('div');
+    line1.className = 'skeleton-line h-4 w-2/3 mb-3';
+    const line2 = document.createElement('div');
+    line2.className = 'skeleton-line h-3 w-full mb-2';
+    const line3 = document.createElement('div');
+    line3.className = 'skeleton-line h-3 w-4/5';
+    card.append(media, line1, line2, line3);
+    fragment.appendChild(card);
+  }
+  container.appendChild(fragment);
+}
+
+window.addEventListener('offline', () => setNetworkBanner(true));
+window.addEventListener('online', async () => {
+  setNetworkBanner(true, 'กลับมาออนไลน์แล้ว กำลังอัปเดตข้อมูล…', false);
+  if (state.room) {
+    try { await loadEverything(); setNetworkBanner(false); }
+    catch (error) { setNetworkBanner(true, 'เชื่อมต่อแล้ว แต่ยังโหลดข้อมูลไม่สำเร็จ', true); }
+  } else {
+    setNetworkBanner(false);
+  }
+});
+
+document.getElementById('btnNetworkRetry').addEventListener('click', async () => {
+  if (!navigator.onLine) { setNetworkBanner(true); return; }
+  setNetworkBanner(true, 'กำลังลองเชื่อมต่อและอัปเดตข้อมูล…', false);
+  try { await loadEverything(); setNetworkBanner(false); toast('อัปเดตข้อมูลล่าสุดแล้ว'); }
+  catch (error) { setNetworkBanner(true, 'โหลดข้อมูลไม่สำเร็จ กรุณาลองอีกครั้ง', true); }
+});
+
+/* ==============================================================================
    DATA LOADING
    ============================================================================== */
 async function loadEverything() {
+  showTaskSkeletons();
+  if (!navigator.onLine) setNetworkBanner(true);
   await Promise.all([loadSubjects(), loadTasks()]);
   if (state.activeSubjectFilter !== null && !state.subjects.some(subject => String(subject.id) === String(state.activeSubjectFilter))) {
     state.activeSubjectFilter = null;
@@ -908,7 +1062,8 @@ async function loadSubjects() {
     .select('*')
     .eq('classroom_id', state.room.id)
     .order('subject_name', { ascending: true });
-  if (!error) state.subjects = data || [];
+  if (error) throw error;
+  state.subjects = data || [];
 }
 
 async function loadTasks() {
@@ -918,7 +1073,8 @@ async function loadTasks() {
     .select('*, subjects(subject_code, subject_name)')
     .eq('classroom_id', state.room.id)
     .order('due_date', { ascending: true });
-  if (!error) state.tasks = data || [];
+  if (error) throw error;
+  state.tasks = data || [];
 }
 
 /* ==============================================================================
@@ -1168,12 +1324,20 @@ function isCompleted(taskId) {
   const done = JSON.parse(localStorage.getItem('cht_completed') || '{}');
   return !!done[taskId];
 }
-function toggleCompleted(taskId) {
+function setCompleted(taskId, completed) {
   const done = JSON.parse(localStorage.getItem('cht_completed') || '{}');
-  done[taskId] = !done[taskId];
+  if (completed) done[taskId] = true;
+  else delete done[taskId];
   localStorage.setItem('cht_completed', JSON.stringify(done));
-  haptic(10);
   updateTabCounts();
+  updateSummaryStats();
+}
+
+function toggleCompleted(taskId) {
+  const next = !isCompleted(taskId);
+  setCompleted(taskId, next);
+  haptic(10);
+  return next;
 }
 
 function daysUntil(dateStr) {
@@ -1217,9 +1381,15 @@ function createTaskCard(task) {
     doneButton.appendChild(icon);
   }
   doneButton.addEventListener('click', () => {
-    toggleCompleted(task.id);
+    const previous = done;
+    const completedNow = toggleCompleted(task.id);
     renderTasks();
     lucide.createIcons();
+    toast(completedNow ? 'ทำเครื่องหมายว่าเสร็จแล้ว' : 'ย้ายกลับเป็นงานค้าง', 'เลิกทำ', () => {
+      setCompleted(task.id, previous);
+      renderTasks();
+      lucide.createIcons();
+    }, 5000);
   });
 
   top.append(badges, doneButton);
@@ -1329,6 +1499,18 @@ function createTaskCard(task) {
   const actions = document.createElement('div');
   actions.className = 'flex gap-1.5 shrink-0';
 
+  const detail = document.createElement('button');
+  detail.type = 'button';
+  detail.className = 'card-action-button rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center transition hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500';
+  detail.setAttribute('aria-label', 'เปิดรายละเอียดการบ้าน');
+  detail.title = 'ดูรายละเอียด';
+  const detailIcon = document.createElement('i');
+  detailIcon.dataset.lucide = 'eye';
+  detailIcon.className = 'w-4 h-4';
+  detail.appendChild(detailIcon);
+  detail.addEventListener('click', () => openTaskDetail(task));
+  actions.appendChild(detail);
+
   const share = document.createElement('button');
   share.type = 'button';
   share.className = 'card-action-button rounded-xl bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 flex items-center justify-center transition hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500';
@@ -1370,6 +1552,21 @@ function createTaskCard(task) {
   return card;
 }
 
+function getDeadlineGroup(task) {
+  if (!task.due_date) return { key:'none', label:'ไม่ระบุกำหนดส่ง', rank:5 };
+  const due = new Date(task.due_date);
+  if (Number.isNaN(due.getTime())) return { key:'none', label:'ไม่ระบุกำหนดส่ง', rank:5 };
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+  const diff = Math.round((dueDay - today) / 86400000);
+  if (diff < 0) return { key:'overdue', label:'เลยกำหนด', rank:0 };
+  if (diff === 0) return { key:'today', label:'วันนี้', rank:1 };
+  if (diff === 1) return { key:'tomorrow', label:'พรุ่งนี้', rank:2 };
+  if (diff <= 7) return { key:'week', label:'ภายใน 7 วัน', rank:3 };
+  return { key:'later', label:'หลังจากนี้', rank:4 };
+}
+
 function renderTasks() {
   updateTabCounts();
   updateSummaryStats();
@@ -1395,23 +1592,203 @@ function renderTasks() {
   }
 
   empty.classList.add('hidden');
-  const fragment = document.createDocumentFragment();
-  list.forEach((task, index) => {
-    const card = createTaskCard(task);
-    card.style.animationDelay = `${Math.min(index * 35, 210)}ms`;
-    fragment.appendChild(card);
+  const groups = new Map();
+  list.forEach(task => {
+    const meta = getDeadlineGroup(task);
+    if (!groups.has(meta.key)) groups.set(meta.key, { ...meta, tasks:[] });
+    groups.get(meta.key).tasks.push(task);
   });
+
+  const fragment = document.createDocumentFragment();
+  [...groups.values()].sort((a,b) => a.rank - b.rank).forEach(group => {
+    const section = document.createElement('section');
+    section.className = 'deadline-group';
+
+    const heading = document.createElement('div');
+    heading.className = 'deadline-heading';
+    const label = document.createElement('span');
+    label.textContent = group.label;
+    const count = document.createElement('span');
+    count.className = 'deadline-count';
+    count.textContent = String(group.tasks.length);
+    heading.append(label, count);
+
+    const grid = document.createElement('div');
+    grid.className = 'grid grid-cols-1 gap-3.5 w-full';
+    group.tasks.forEach((task, index) => {
+      const card = createTaskCard(task);
+      card.style.animationDelay = `${Math.min(index * 35, 175)}ms`;
+      grid.appendChild(card);
+    });
+    section.append(heading, grid);
+    fragment.appendChild(section);
+  });
+
   container.appendChild(fragment);
   lucide.createIcons();
 }
 
-async function deleteTask(id) {
-  if (!confirm('ยืนยันการลบการบ้านนี้ใช่หรือไม่?')) return;
+async function commitPendingDelete(id) {
+  const pending = state.pendingDeletes.get(String(id));
+  if (!pending) return;
+  state.pendingDeletes.delete(String(id));
   const { error } = await supabase.from('assignments').delete().eq('id', id);
-  if (error) { toast('ลบไม่สำเร็จ: ' + error.message); return; }
-  await loadEverything();
-  toast('ลบการบ้านเรียบร้อย');
+  if (error) {
+    const insertAt = Math.min(pending.index, state.tasks.length);
+    state.tasks.splice(insertAt, 0, pending.task);
+    renderTasks();
+    toast('ลบไม่สำเร็จ: ' + error.message, '', null, 4500);
+  }
 }
+
+function deleteTask(id) {
+  if (!confirm('ยืนยันการลบการบ้านนี้ใช่หรือไม่?')) return;
+  const index = state.tasks.findIndex(task => String(task.id) === String(id));
+  if (index < 0) return;
+  const task = state.tasks[index];
+  state.tasks.splice(index, 1);
+  renderTasks();
+  haptic(10);
+
+  const timer = setTimeout(() => commitPendingDelete(id), 6000);
+  state.pendingDeletes.set(String(id), { task, index, timer });
+  toast('ลบการบ้านแล้ว', 'เลิกทำ', () => {
+    const pending = state.pendingDeletes.get(String(id));
+    if (!pending) return;
+    clearTimeout(pending.timer);
+    state.pendingDeletes.delete(String(id));
+    const insertAt = Math.min(pending.index, state.tasks.length);
+    state.tasks.splice(insertAt, 0, pending.task);
+    renderTasks();
+    toast('ยกเลิกการลบแล้ว');
+  }, 6000);
+}
+
+/* ==============================================================================
+   TASK DETAIL BOTTOM SHEET
+   ============================================================================== */
+function formatDueDate(dateStr) {
+  if (!dateStr) return 'ไม่ระบุกำหนดส่ง';
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return 'ไม่ระบุกำหนดส่ง';
+  return date.toLocaleString('th-TH', { dateStyle:'medium', timeStyle:'short' });
+}
+
+function openTaskDetail(task) {
+  if (!task) return;
+  state.activeDetailTaskId = task.id;
+  const content = document.getElementById('taskDetailContent');
+  clearElement(content);
+
+  const images = (Array.isArray(task.images) ? task.images : []).map(value => safeUrl(value?.url || value)).filter(Boolean);
+  if (images.length) {
+    const media = document.createElement('div');
+    media.className = 'mb-4';
+    const main = document.createElement('img');
+    main.src = images[0];
+    main.alt = 'ภาพประกอบการบ้าน';
+    main.className = 'w-full max-h-[360px] aspect-video object-cover rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer';
+    main.addEventListener('click', () => openLightbox(images, 0));
+    media.appendChild(main);
+    if (images.length > 1) {
+      const thumbs = document.createElement('div');
+      thumbs.className = 'grid grid-cols-3 gap-2 mt-2';
+      images.slice(1,4).forEach((url, index) => {
+        const img = document.createElement('img');
+        img.src = url; img.alt = 'ภาพประกอบการบ้าน';
+        img.className = 'w-full aspect-video object-cover rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer';
+        img.addEventListener('click', () => openLightbox(images, index + 1));
+        thumbs.appendChild(img);
+      });
+      media.appendChild(thumbs);
+    }
+    content.appendChild(media);
+  }
+
+  const subject = task.subjects || subjectById(task.subject_id);
+  const badges = document.createElement('div');
+  badges.className = 'flex flex-wrap gap-1.5 mb-3';
+  badges.appendChild(createSubjectBadge(subject));
+  badges.appendChild(createBadge(task.task_type === 'GROUP' ? 'งานกลุ่ม' : 'งานเดี่ยว', 'px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-semibold text-slate-600 dark:text-slate-300'));
+  content.appendChild(badges);
+
+  const title = document.createElement('h3');
+  title.className = 'font-display text-xl sm:text-2xl font-extrabold leading-snug text-slate-900 dark:text-white';
+  title.textContent = String(task.title || 'การบ้าน');
+  content.appendChild(title);
+
+  if (task.description) {
+    const description = document.createElement('div');
+    description.className = 'mt-3 text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap break-words';
+    appendLinkifiedText(description, task.description);
+    content.appendChild(description);
+  }
+
+  const meta = document.createElement('div');
+  meta.className = 'detail-meta-grid mt-4';
+  const dueItem = document.createElement('div');
+  dueItem.className = 'detail-meta-item';
+  const dueLabel = document.createElement('p'); dueLabel.className = 'text-[10px] text-slate-400 font-semibold'; dueLabel.textContent = 'กำหนดส่ง';
+  const dueValue = document.createElement('p'); dueValue.className = 'text-xs font-bold mt-1'; dueValue.textContent = formatDueDate(task.due_date);
+  dueItem.append(dueLabel, dueValue);
+  const workItem = document.createElement('div');
+  workItem.className = 'detail-meta-item';
+  const workLabel = document.createElement('p'); workLabel.className = 'text-[10px] text-slate-400 font-semibold'; workLabel.textContent = 'ภาระงาน';
+  const workValue = document.createElement('p'); workValue.className = 'text-xs font-bold mt-1'; workValue.textContent = `ประมาณ ${Number(task.estimated_minutes) || 20} นาที`;
+  workItem.append(workLabel, workValue);
+  meta.append(dueItem, workItem);
+  content.appendChild(meta);
+
+  const attachments = Array.isArray(task.attachments) ? task.attachments : [];
+  const validAttachments = attachments.map(a => ({ name:String(a?.name || 'ไฟล์แนบ'), url:safeUrl(a?.url || '') })).filter(a => a.url);
+  if (validAttachments.length) {
+    const heading = document.createElement('h4');
+    heading.className = 'font-display font-bold text-sm mt-5 mb-2';
+    heading.textContent = 'ไฟล์แนบ';
+    content.appendChild(heading);
+    const list = document.createElement('div'); list.className = 'space-y-2';
+    validAttachments.forEach(file => {
+      const link = document.createElement('a');
+      link.href = file.url; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.className = 'detail-attachment text-xs font-semibold text-brand-700 dark:text-brand-300';
+      const icon = document.createElement('i'); icon.dataset.lucide = 'paperclip'; icon.className = 'w-4 h-4 shrink-0';
+      const name = document.createElement('span'); name.className = 'truncate'; name.textContent = file.name;
+      link.append(icon, name); list.appendChild(link);
+    });
+    content.appendChild(list);
+  }
+
+  const actions = document.createElement('div');
+  actions.className = 'grid grid-cols-1 sm:grid-cols-2 gap-2 mt-5';
+  const copy = document.createElement('button'); copy.type = 'button'; copy.className = 'min-h-[44px] rounded-2xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold flex items-center justify-center gap-2';
+  const copyIcon = document.createElement('i'); copyIcon.dataset.lucide = 'copy'; copyIcon.className = 'w-4 h-4';
+  const copyText = document.createElement('span'); copyText.textContent = 'คัดลอกรายละเอียด'; copy.append(copyIcon, copyText); copy.addEventListener('click', () => shareOrCopyTask(task));
+  actions.appendChild(copy);
+  if (state.isRep) {
+    const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'min-h-[44px] rounded-2xl bg-slate-100 dark:bg-slate-800 text-xs font-bold flex items-center justify-center gap-2';
+    const editIcon = document.createElement('i'); editIcon.dataset.lucide = 'pencil'; editIcon.className = 'w-4 h-4';
+    const editText = document.createElement('span'); editText.textContent = 'แก้ไขงาน'; edit.append(editIcon, editText);
+    edit.addEventListener('click', () => { closeTaskDetail(); openTaskModal(task); });
+    actions.appendChild(edit);
+  }
+  content.appendChild(actions);
+
+  document.getElementById('taskDetailTitle').textContent = 'รายละเอียดการบ้าน';
+  openModal('taskDetailOverlay');
+  lucide.createIcons();
+}
+
+function closeTaskDetail() {
+  state.activeDetailTaskId = null;
+  closeModal('taskDetailOverlay');
+}
+
+document.getElementById('btnTaskDetailClose').addEventListener('click', closeTaskDetail);
+document.getElementById('taskDetailOverlay').addEventListener('click', event => {
+  if (event.target === event.currentTarget) closeTaskDetail();
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && !document.getElementById('taskDetailOverlay').classList.contains('hidden')) closeTaskDetail();
+});
 
 /* ==============================================================================
    LIGHTBOX
@@ -1814,8 +2191,15 @@ document.getElementById('btnAiUseData').addEventListener('click', () => {
 async function init() {
   syncFilterControls();
   lucide.createIcons();
-  const restored = await restoreRoom();
-  if (!restored) openModal('pickerOverlay');
+  if (!navigator.onLine) setNetworkBanner(true);
+  try {
+    const restored = await restoreRoom();
+    if (!restored) openModal('pickerOverlay');
+    if (navigator.onLine) setNetworkBanner(false);
+  } catch (error) {
+    console.error('Initial load failed', error);
+    setNetworkBanner(true, navigator.onLine ? 'โหลดข้อมูลไม่สำเร็จ กรุณาลองอีกครั้ง' : 'ออฟไลน์ — แสดงข้อมูลล่าสุดที่มีอยู่', true);
+  }
   checkLockoutState();
 }
 init();
