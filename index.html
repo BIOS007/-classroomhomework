@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" class="overflow-x-hidden">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>ห้องนี้มีการบ้าน — Classroom Homework Hub</title>
 
 <!-- Pinned CDN dependencies (Strict Security & SRI ready) -->
@@ -33,21 +33,27 @@
 </script>
 
 <style>
-  html, body { font-family: 'Noto Sans Thai', 'Prompt', sans-serif; }
+  html, body {
+    font-family: 'Noto Sans Thai', 'Prompt', sans-serif;
+    overflow-x: hidden !important;
+    width: 100%;
+    max-width: 100vw;
+    touch-action: pan-y;
+  }
   .font-display { font-family: 'Prompt', 'Noto Sans Thai', sans-serif; }
-  ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-thumb { background: rgba(120,120,120,.4); border-radius: 8px; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-thumb { background: rgba(120,120,120,.3); border-radius: 8px; }
 
-  @keyframes modalIn { from { opacity:0; transform: translateY(24px) scale(.98);} to { opacity:1; transform: translateY(0) scale(1);} }
-  .modal-panel { animation: modalIn .22s ease-out; }
+  @keyframes modalIn { from { opacity:0; transform: translateY(20px) scale(.98);} to { opacity:1; transform: translateY(0) scale(1);} }
+  .modal-panel { animation: modalIn .2s ease-out; }
 
-  @keyframes fabPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(124,58,237,.35);} 50% { box-shadow: 0 0 0 10px rgba(124,58,237,0);} }
+  @keyframes fabPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(124,58,237,.35);} 50% { box-shadow: 0 0 0 8px rgba(124,58,237,0);} }
   .fab-pulse { animation: fabPulse 2.4s ease-in-out infinite; }
 
   .safe-top { padding-top: env(safe-area-inset-top, 0px); }
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
-  .drag-indicator { width: 40px; height: 5px; border-radius: 999px; background: rgba(148,163,184,.5); margin: 8px auto 2px; }
+  .drag-indicator { width: 36px; height: 4px; border-radius: 999px; background: rgba(148,163,184,.4); margin: 6px auto 2px; }
 
   .task-card { transition: transform .15s ease, box-shadow .15s ease; }
   .task-card:hover { transform: translateY(-2px); }
@@ -55,102 +61,118 @@
   .lockout-shake { animation: shake .4s; }
   @keyframes shake { 10%,90%{transform:translateX(-1px)} 20%,80%{transform:translateX(2px)} 30%,50%,70%{transform:translateX(-4px)} 40%,60%{transform:translateX(4px)} }
 
-  a.linkified { color: #1a6ff5; text-decoration: underline; text-underline-offset: 2px; word-break: break-word; font-weight: 600; }
+  a.linkified { color: #1a6ff5; text-decoration: underline; text-underline-offset: 2px; word-break: break-all; font-weight: 600; }
   .dark a.linkified { color: #8ecdff; }
 
-  .chip { display:inline-flex; align-items:center; gap:4px; }
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+  .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
 </head>
 
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen overflow-x-hidden flex flex-col justify-between">
 
-<!-- ============================= TOP NAV ============================= -->
-<header class="safe-top sticky top-0 z-30 backdrop-blur bg-white/85 dark:bg-slate-950/85 border-b border-slate-200 dark:border-slate-800">
-  <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
-    <div class="flex items-center gap-2 min-w-0">
-      <div class="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shrink-0 shadow-sm">
-        <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+<div>
+  <!-- ============================= TOP NAV ============================= -->
+  <header class="safe-top sticky top-0 z-30 backdrop-blur-md bg-white/90 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800">
+    <div class="max-w-5xl mx-auto px-3.5 py-2.5 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2 min-w-0 flex-1 cursor-pointer" id="btnChangeRoom">
+        <div class="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shrink-0 shadow-sm">
+          <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+        </div>
+        <div class="min-w-0">
+          <h1 class="font-display font-bold text-sm sm:text-base leading-tight truncate">ห้องนี้มีการบ้าน</h1>
+          <p id="roomLabel" class="text-[11px] text-brand-600 dark:text-brand-400 font-semibold leading-tight truncate">กำลังโหลดห้อง...</p>
+        </div>
       </div>
-      <div class="min-w-0 cursor-pointer" id="btnChangeRoom">
-        <h1 class="font-display font-bold text-base leading-tight truncate">ห้องนี้มีการบ้าน</h1>
-        <p id="roomLabel" class="text-[11px] text-brand-600 dark:text-brand-400 font-semibold leading-tight truncate">กำลังเลือกห้องเรียน...</p>
+
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button id="btnLineShare" title="แชร์ผ่าน LINE"
+          class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-white text-xs font-semibold shadow-sm transition active:scale-95">
+          <i data-lucide="share-2" class="w-4 h-4"></i> แชร์ห้อง
+        </button>
+        <button id="btnLineBot" title="ดึงบอทเข้ากลุ่ม LINE"
+          class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition active:scale-95">
+          <i data-lucide="bot" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">ดึงบอทเข้ากลุ่ม LINE</span>
+        </button>
+        <button id="btnDarkToggle" title="สลับธีมสี" class="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition active:scale-95">
+          <i data-lucide="sun-moon" class="w-4 h-4"></i>
+        </button>
+        <button id="btnRepMode" title="โหมดตัวแทนห้อง" class="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition active:scale-95">
+          <i data-lucide="shield-check" class="w-4 h-4"></i>
+        </button>
       </div>
     </div>
+  </header>
 
-    <div class="flex items-center gap-1.5 shrink-0">
-      <button id="btnLineShare" title="แชร์ผ่าน LINE"
-        class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-white text-xs font-semibold shadow-sm transition active:scale-95">
-        <i data-lucide="share-2" class="w-4 h-4"></i> แชร์ห้อง LINE
+  <main class="max-w-5xl mx-auto px-3.5 pb-28 w-full min-w-0">
+
+    <!-- Workload analytics -->
+    <section class="mt-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-display font-semibold text-xs sm:text-sm flex items-center gap-1.5">
+          <i data-lucide="bar-chart-3" class="w-4 h-4 text-brand-600"></i> ภาระงานรายสัปดาห์
+        </h2>
+        <span id="workloadAlert" class="hidden text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 font-medium">
+          ⚠️ สัปดาห์นี้งานเยอะ
+        </span>
+      </div>
+      <div class="w-full relative h-28">
+        <canvas id="workloadChart" class="w-full h-full block"></canvas>
+      </div>
+    </section>
+
+    <!-- STATUS FILTER TABS (งานทั้งหมด / ยังไม่เสร็จ / เสร็จแล้ว) -->
+    <section class="mt-3.5 flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 rounded-xl w-full" id="statusTabs">
+      <button data-status="ALL" class="status-tab flex-1 py-1.5 rounded-lg text-xs font-semibold text-center transition bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm">
+        ทั้งหมด <span id="countAll" class="text-[10px] opacity-75">(0)</span>
       </button>
-      <button id="btnLineBot" title="ดึงบอทเข้ากลุ่ม LINE"
-        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition active:scale-95">
-        <i data-lucide="bot" class="w-4 h-4"></i>
-        <span class="hidden sm:inline">ดึงบอทเข้ากลุ่ม LINE</span>
+      <button data-status="PENDING" class="status-tab flex-1 py-1.5 rounded-lg text-xs font-semibold text-center transition text-slate-600 dark:text-slate-400 hover:text-slate-900">
+        ยังไม่เสร็จ <span id="countPending" class="text-[10px] opacity-75">(0)</span>
       </button>
-      <button id="btnDarkToggle" title="สลับธีมสี" class="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition active:scale-95">
-        <i data-lucide="sun-moon" class="w-4 h-4"></i>
+      <button data-status="COMPLETED" class="status-tab flex-1 py-1.5 rounded-lg text-xs font-semibold text-center transition text-slate-600 dark:text-slate-400 hover:text-slate-900">
+        เสร็จแล้ว <span id="countDone" class="text-[10px] opacity-75">(0)</span>
       </button>
-      <button id="btnRepMode" title="โหมดตัวแทนห้อง" class="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition active:scale-95">
-        <i data-lucide="shield-check" class="w-4 h-4"></i>
-      </button>
+    </section>
+
+    <!-- Subject filter chips -->
+    <section class="mt-2.5 flex items-center gap-1.5 overflow-x-auto hide-scrollbar py-1 w-full min-w-0" id="subjectChips"></section>
+
+    <!-- Task list -->
+    <section id="taskList" class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full"></section>
+
+    <div id="emptyState" class="hidden text-center py-12 text-slate-400">
+      <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2 text-slate-300 dark:text-slate-700"></i>
+      <p class="text-xs sm:text-sm font-medium">ไม่พบรายการการบ้านตามเงื่อนไข</p>
     </div>
-  </div>
-</header>
-
-<main class="max-w-5xl mx-auto px-4 pb-32">
-
-  <!-- Workload analytics -->
-  <section class="mt-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
-    <div class="flex items-center justify-between mb-2">
-      <h2 class="font-display font-semibold text-sm flex items-center gap-1.5">
-        <i data-lucide="bar-chart-3" class="w-4 h-4 text-brand-600"></i> ภาระงานรายสัปดาห์
-      </h2>
-      <span id="workloadAlert" class="hidden text-[11px] px-2 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 chip font-medium">
-        <i data-lucide="alert-triangle" class="w-3 h-3"></i> สัปดาห์นี้งานเยอะเป็นพิเศษ
-      </span>
-    </div>
-    <canvas id="workloadChart" height="120"></canvas>
-  </section>
-
-  <!-- Subject filter chips -->
-  <section class="mt-4 flex items-center gap-2 overflow-x-auto pb-1" id="subjectChips"></section>
-
-  <!-- Task list -->
-  <section id="taskList" class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3"></section>
-
-  <div id="emptyState" class="hidden text-center py-16 text-slate-400">
-    <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2 text-slate-300 dark:text-slate-600"></i>
-    <p class="text-sm font-medium">ยังไม่มีการบ้านในห้องนี้</p>
-    <p class="text-xs mt-1 text-slate-400">เข้าสู่โหมดตัวแทนห้องเพื่อเริ่มเพิ่มการบ้าน</p>
-  </div>
-</main>
+  </main>
+</div>
 
 <!-- ============================= FABs (Representative mode only) ============================= -->
-<div id="fabWrap" class="hidden fixed bottom-6 right-5 z-40 flex flex-col items-end gap-3 safe-bottom">
-  <button id="fabCamera" title="AI สแกนการบ้าน" class="fab-pulse w-14 h-14 rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-600/30 flex items-center justify-center transition active:scale-95">
+<div id="fabWrap" class="hidden fixed bottom-6 right-4 z-40 flex flex-col items-end gap-2.5 safe-bottom">
+  <button id="fabCamera" title="AI สแกนการบ้าน" class="fab-pulse w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-600/30 flex items-center justify-center transition active:scale-95">
     <i data-lucide="camera" class="w-6 h-6"></i>
   </button>
-  <button id="fabPlus" title="เพิ่มการบ้านใหม่" class="w-14 h-14 rounded-full bg-brand-600 hover:bg-brand-700 text-white shadow-lg shadow-brand-600/30 flex items-center justify-center transition active:scale-95">
+  <button id="fabPlus" title="เพิ่มการบ้านใหม่" class="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-brand-600 hover:bg-brand-700 text-white shadow-lg shadow-brand-600/30 flex items-center justify-center transition active:scale-95">
     <i data-lucide="plus" class="w-6 h-6"></i>
   </button>
   <input id="cameraInput" type="file" accept="image/*" capture="environment" class="hidden">
-  <input id="timetableInput" type="file" accept="image/*" capture="environment" multiple class="hidden">
 </div>
 
 <!-- ============================= CLASSROOM PICKER ============================= -->
-<div id="pickerOverlay" class="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4">
+<div id="pickerOverlay" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
   <div class="modal-panel bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-5 safe-bottom border border-slate-200 dark:border-slate-800 shadow-2xl">
     <div class="drag-indicator sm:hidden"></div>
-    <h2 class="font-display font-bold text-lg mb-1 flex items-center gap-2"><i data-lucide="school" class="w-5 h-5 text-brand-600"></i> เลือกห้องเรียน</h2>
+    <h2 class="font-display font-bold text-base sm:text-lg mb-1 flex items-center gap-2"><i data-lucide="school" class="w-5 h-5 text-brand-600"></i> เลือกห้องเรียน</h2>
     <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">เลือกระดับชั้นและห้องของคุณเพื่อเริ่มใช้งาน</p>
 
     <label class="text-xs font-semibold text-slate-500">ระดับชั้น</label>
-    <select id="pickGrade" class="w-full mt-1 mb-3 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-brand-500"></select>
+    <select id="pickGrade" class="w-full mt-1 mb-3 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-brand-500 text-sm font-medium"></select>
 
     <label class="text-xs font-semibold text-slate-500">ห้องเรียน</label>
-    <select id="pickRoom" class="w-full mt-1 mb-4 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-brand-500"></select>
+    <select id="pickRoom" class="w-full mt-1 mb-4 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-brand-500 text-sm font-medium"></select>
 
-    <button id="btnEnterRoom" class="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold flex items-center justify-center gap-2 shadow-sm transition active:scale-95">
+    <button id="btnEnterRoom" class="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold flex items-center justify-center gap-2 shadow-sm transition active:scale-95 text-sm">
       <i data-lucide="log-in" class="w-4 h-4"></i> เข้าสู่ห้องเรียน
     </button>
     <p id="pickerError" class="hidden text-xs text-rose-600 mt-2 text-center font-medium"></p>
@@ -158,57 +180,54 @@
 </div>
 
 <!-- ============================= PASSCODE GATE ============================= -->
-<div id="passcodeOverlay" class="hidden fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4">
+<div id="passcodeOverlay" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
   <div class="modal-panel bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-5 safe-bottom border border-slate-200 dark:border-slate-800 shadow-2xl">
     <div class="flex items-center justify-between mb-3">
-      <h2 class="font-display font-bold text-lg flex items-center gap-2"><i data-lucide="lock" class="w-5 h-5 text-brand-600"></i> รหัสตัวแทนห้อง</h2>
-      <button data-close="passcodeOverlay" class="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700">
+      <h2 class="font-display font-bold text-base flex items-center gap-2"><i data-lucide="lock" class="w-5 h-5 text-brand-600"></i> รหัสตัวแทนห้อง</h2>
+      <button data-close="passcodeOverlay" class="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
         <i data-lucide="x" class="w-4 h-4"></i>
       </button>
     </div>
     <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">กรอกรหัสผ่านเพื่อปลดล็อกสิทธิ์เพิ่ม/แก้ไขการบ้าน</p>
     <input id="passcodeInput" type="password" inputmode="numeric" placeholder="รหัสผ่านห้อง"
-      class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-brand-500 tracking-widest text-center font-bold">
+      class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-brand-500 tracking-widest text-center font-bold text-sm">
     <p id="passcodeStatus" class="text-xs text-rose-600 mt-2 min-h-[16px] text-center font-medium"></p>
-    <button id="btnPasscodeSubmit" class="w-full mt-2 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold transition active:scale-95">ยืนยันรหัสผ่าน</button>
+    <button id="btnPasscodeSubmit" class="w-full mt-2 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold transition active:scale-95 text-sm">ยืนยันรหัสผ่าน</button>
   </div>
 </div>
 
 <!-- ============================= TASK MODAL (Add/Edit) ============================= -->
-<div id="taskModalOverlay" class="hidden fixed inset-0 z-50 bg-slate-950/60 flex items-end sm:items-center justify-center">
-  <div class="modal-panel bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[92vh] overflow-y-auto safe-bottom border border-slate-200 dark:border-slate-800 shadow-2xl">
-    <div class="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur safe-top z-10 border-b border-slate-100 dark:border-slate-800">
-      <div class="drag-indicator sm:hidden"></div>
-      <div class="flex items-center justify-between px-5 py-3">
-        <h2 id="taskModalTitle" class="font-display font-bold text-base">เพิ่มการบ้าน</h2>
-        <button data-close="taskModalOverlay" class="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
+<div id="taskModalOverlay" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-end sm:items-center justify-center">
+  <div class="modal-panel bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto safe-bottom border border-slate-200 dark:border-slate-800 shadow-2xl">
+    <div class="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md safe-top z-10 border-b border-slate-100 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
+      <h2 id="taskModalTitle" class="font-display font-bold text-sm sm:text-base">เพิ่มการบ้าน</h2>
+      <button data-close="taskModalOverlay" class="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
     </div>
 
-    <form id="taskForm" class="p-5 space-y-3">
+    <form id="taskForm" class="p-4 space-y-3">
       <input type="hidden" id="taskId">
 
       <div>
         <label class="text-xs font-semibold text-slate-500">วิชา</label>
-        <select id="taskSubject" required class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-medium"></select>
+        <select id="taskSubject" required class="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-medium"></select>
       </div>
 
       <div>
         <label class="text-xs font-semibold text-slate-500">หัวข้องาน / ชื่องาน</label>
-        <input id="taskTitle" required class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" placeholder="เช่น แบบฝึกหัดบทที่ 3 หน้า 45">
+        <input id="taskTitle" required class="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs" placeholder="เช่น แบบฝึกหัดบทที่ 3 หน้า 45">
       </div>
 
       <div>
-        <label class="text-xs font-semibold text-slate-500">รายละเอียดคำสั่งงาน (ลิงก์จะกดเปิดได้อัตโนมัติ)</label>
-        <textarea id="taskDesc" rows="3" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800" placeholder="คำสั่งงานเพิ่มเติม, ลิงก์ Google Forms, YouTube ฯลฯ"></textarea>
+        <label class="text-xs font-semibold text-slate-500">รายละเอียด (ลิงก์กดเปิดได้อัตโนมัติ)</label>
+        <textarea id="taskDesc" rows="3" class="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs" placeholder="คำสั่งงาน, ลิงก์ Google Forms ฯลฯ"></textarea>
       </div>
 
-      <div class="grid grid-cols-2 gap-3">
+      <div class="grid grid-cols-2 gap-2.5">
         <div>
           <label class="text-xs font-semibold text-slate-500">ประเภทงาน</label>
-          <select id="taskType" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+          <select id="taskType" class="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs">
             <option value="INDIVIDUAL">งานเดี่ยว</option>
             <option value="GROUP">งานกลุ่ม</option>
           </select>
@@ -221,24 +240,24 @@
 
       <div>
         <label class="text-xs font-semibold text-slate-500">ภาระงานโดยประมาณ (นาที)</label>
-        <input id="taskWorkload" type="number" min="5" step="5" value="20" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+        <input id="taskWorkload" type="number" min="5" step="5" value="20" class="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs">
       </div>
 
       <div>
-        <label class="text-xs font-semibold text-slate-500">รูปภาพประกอบ (หลายรูปได้)</label>
+        <label class="text-xs font-semibold text-slate-500">รูปภาพประกอบ</label>
         <input id="taskImages" type="file" accept="image/png,image/jpeg,image/webp" multiple
-          class="w-full mt-1 text-xs file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-brand-100 file:text-brand-700 dark:file:bg-brand-900/40 dark:file:text-brand-300">
+          class="w-full mt-1 text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-brand-100 file:text-brand-700 dark:file:bg-brand-900/40 dark:file:text-brand-300">
         <div id="taskImagePreview" class="flex gap-2 flex-wrap mt-2"></div>
       </div>
 
       <div>
-        <label class="text-xs font-semibold text-slate-500">ไฟล์เอกสารแนบ (PDF, Word, PPTX, ZIP — ไม่เกิน 15MB)</label>
+        <label class="text-xs font-semibold text-slate-500">ไฟล์เอกสารแนบ (ไม่เกิน 15MB)</label>
         <input id="taskAttachments" type="file" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip"
-          class="w-full mt-1 text-xs file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-slate-200 file:text-slate-700 dark:file:bg-slate-700 dark:file:text-slate-200">
+          class="w-full mt-1 text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-slate-200 file:text-slate-700 dark:file:bg-slate-700 dark:file:text-slate-200">
         <div id="taskAttachmentList" class="text-xs mt-1 space-y-1"></div>
       </div>
 
-      <button type="submit" class="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold flex items-center justify-center gap-2 shadow-sm transition active:scale-95">
+      <button type="submit" class="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold flex items-center justify-center gap-2 shadow-sm transition active:scale-95 text-xs sm:text-sm">
         <i data-lucide="save" class="w-4 h-4"></i> บันทึกข้อมูลการบ้าน
       </button>
     </form>
@@ -246,36 +265,33 @@
 </div>
 
 <!-- ============================= AI REVIEW MODAL ============================= -->
-<div id="aiReviewOverlay" class="hidden fixed inset-0 z-50 bg-slate-950/60 flex items-end sm:items-center justify-center">
-  <div class="modal-panel bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm max-h-[92vh] overflow-y-auto safe-bottom border border-slate-200 dark:border-slate-800 shadow-2xl">
-    <div class="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur safe-top z-10 border-b border-slate-100 dark:border-slate-800">
-      <div class="drag-indicator sm:hidden"></div>
-      <div class="flex items-center justify-between px-5 py-3">
-        <h2 class="font-display font-bold text-base flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-600"></i> AI สแกนการบ้าน</h2>
-        <button data-close="aiReviewOverlay" class="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
+<div id="aiReviewOverlay" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-end sm:items-center justify-center">
+  <div class="modal-panel bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm max-h-[90vh] overflow-y-auto safe-bottom border border-slate-200 dark:border-slate-800 shadow-2xl">
+    <div class="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md safe-top z-10 border-b border-slate-100 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
+      <h2 class="font-display font-bold text-sm flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-600"></i> AI สแกนการบ้าน</h2>
+      <button data-close="aiReviewOverlay" class="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
     </div>
-    <div class="p-5 space-y-3">
-      <img id="aiReviewImg" class="w-full h-48 object-cover rounded-xl border border-slate-200 dark:border-slate-700" alt="ภาพที่ถ่าย">
+    <div class="p-4 space-y-3">
+      <img id="aiReviewImg" class="w-full h-40 object-cover rounded-xl border border-slate-200 dark:border-slate-700" alt="ภาพที่ถ่าย">
       <div id="aiReviewStatus" class="text-xs text-slate-500 flex items-center gap-2 font-medium">
         <i data-lucide="loader-circle" class="w-4 h-4 animate-spin text-violet-600"></i> กำลังวิเคราะห์รูปภาพด้วย AI...
       </div>
       <div id="aiReviewFields" class="hidden space-y-2">
         <div>
           <label class="text-xs font-semibold text-slate-500">วิชาที่ตรวจพบ</label>
-          <select id="aiSubject" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"></select>
+          <select id="aiSubject" class="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs"></select>
         </div>
         <div>
           <label class="text-xs font-semibold text-slate-500">หัวข้องาน</label>
-          <input id="aiTitle" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 font-medium">
+          <input id="aiTitle" class="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-medium">
         </div>
         <div>
           <label class="text-xs font-semibold text-slate-500">รายละเอียด</label>
-          <textarea id="aiDesc" rows="3" class="w-full mt-1 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"></textarea>
+          <textarea id="aiDesc" rows="3" class="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs"></textarea>
         </div>
-        <button id="btnAiUseData" class="w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold flex items-center justify-center gap-2 shadow-sm transition active:scale-95">
+        <button id="btnAiUseData" class="w-full py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold flex items-center justify-center gap-2 shadow-sm transition active:scale-95 text-xs">
           <i data-lucide="check" class="w-4 h-4"></i> นำข้อมูลไปสร้างการบ้าน
         </button>
       </div>
@@ -284,20 +300,20 @@
 </div>
 
 <!-- ============================= LIGHTBOX ============================= -->
-<div id="lightboxOverlay" class="hidden fixed inset-0 z-[60] bg-black/90 flex items-center justify-center">
-  <button id="lightboxClose" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center">
+<div id="lightboxOverlay" class="hidden fixed inset-0 z-[60] bg-black/90 backdrop-blur flex items-center justify-center p-2">
+  <button id="lightboxClose" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center">
     <i data-lucide="x" class="w-5 h-5"></i>
   </button>
-  <button id="lightboxPrev" class="absolute left-2 sm:left-6 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center">
-    <i data-lucide="chevron-left" class="w-6 h-6"></i>
+  <button id="lightboxPrev" class="absolute left-2 sm:left-6 w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center">
+    <i data-lucide="chevron-left" class="w-5 h-5"></i>
   </button>
-  <button id="lightboxNext" class="absolute right-2 sm:right-6 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center">
-    <i data-lucide="chevron-right" class="w-6 h-6"></i>
+  <button id="lightboxNext" class="absolute right-2 sm:right-6 w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center">
+    <i data-lucide="chevron-right" class="w-5 h-5"></i>
   </button>
-  <img id="lightboxImg" class="max-w-[92vw] max-h-[86vh] object-contain rounded-lg" alt="ภาพขยาย">
+  <img id="lightboxImg" class="max-w-[92vw] max-h-[86vh] object-contain rounded-lg shadow-2xl" alt="ภาพขยาย">
 </div>
 
-<div id="toast" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-[70] bg-slate-900/95 text-white text-xs px-4 py-2.5 rounded-full shadow-2xl font-medium backdrop-blur"></div>
+<div id="toast" class="hidden fixed bottom-20 left-1/2 -translate-x-1/2 z-[70] bg-slate-900/95 text-white text-xs px-4 py-2.5 rounded-full shadow-2xl font-medium backdrop-blur"></div>
 
 <script>
 /* ==============================================================================
@@ -306,7 +322,7 @@
 const SUPABASE_URL = "https://jaqdgehwqqaowzrxabgg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphcWRnZWh3cXFhb3d6cnhhYmdnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5NzIzMTcsImV4cCI6MjEwMzU0ODMxN30.6xiNIP_mmqRWuudWzhSwNPYJoVRvudd-Djbs_lBi090";
 const GOOGLE_DRIVE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz7PfD1Wcal8Dx80Fj4D2cJbP56ez33nYi3j120mCiJ7DK7icg7yRwZZFU_pR8imSuDQQ/exec";
-const LINE_BOT_ID = "@515oqmpb"; // Bot ID จริงจาก LINE Official Account
+const LINE_BOT_ID = "@515oqmpb";
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -408,7 +424,6 @@ async function submitPasscode() {
 
   if (!val) { status.textContent = 'กรุณากรอกรหัสผ่าน'; return; }
 
-  // ยืนยันรหัสผ่านผ่าน Supabase RPC
   const { data: isValid, error } = await supabase.rpc('verify_classroom_passcode', {
     p_classroom_id: state.room.id,
     p_passcode: val
@@ -446,6 +461,7 @@ const state = {
   room: null,
   subjects: [],
   tasks: [],
+  statusFilter: 'ALL', // 'ALL' | 'PENDING' | 'COMPLETED'
   isRep: sessionStorage.getItem('cht_is_rep') === '1',
   activeSubjectFilter: null,
   currentTaskImages: [],
@@ -460,7 +476,7 @@ function toast(msg) {
   t.textContent = msg;
   t.classList.remove('hidden');
   clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.add('hidden'), 2600);
+  t._timer = setTimeout(() => t.classList.add('hidden'), 2500);
 }
 
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
@@ -482,6 +498,7 @@ initDarkMode();
 document.getElementById('btnDarkToggle').addEventListener('click', () => {
   document.documentElement.classList.toggle('dark');
   localStorage.setItem('cht_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  renderWorkloadChart();
 });
 
 /* ==============================================================================
@@ -608,27 +625,54 @@ async function loadTasks() {
 }
 
 /* ==============================================================================
-   SUBJECT BADGE RENDERING
+   STATUS TABS
+   ============================================================================== */
+document.querySelectorAll('#statusTabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    state.statusFilter = btn.dataset.status;
+    document.querySelectorAll('#statusTabs button').forEach(b => {
+      if (b.dataset.status === state.statusFilter) {
+        b.className = 'status-tab flex-1 py-1.5 rounded-lg text-xs font-semibold text-center transition bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm';
+      } else {
+        b.className = 'status-tab flex-1 py-1.5 rounded-lg text-xs font-semibold text-center transition text-slate-600 dark:text-slate-400 hover:text-slate-900';
+      }
+    });
+    renderTasks();
+    lucide.createIcons();
+  });
+});
+
+function updateTabCounts() {
+  const total = state.tasks.length;
+  const done = state.tasks.filter(t => isCompleted(t.id)).length;
+  const pending = total - done;
+  document.getElementById('countAll').textContent = `(${total})`;
+  document.getElementById('countPending').textContent = `(${pending})`;
+  document.getElementById('countDone').textContent = `(${done})`;
+}
+
+/* ==============================================================================
+   SUBJECT BADGE & CHIPS
    ============================================================================== */
 function subjectBadgeHtml(subject) {
   if (!subject) {
-    return `<span class="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 text-[11px] font-medium">วิชาทั่วไป</span>`;
+    return `<span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-medium">วิชาทั่วไป</span>`;
   }
   const name = subject.subject_name || '';
   const code = subject.subject_code || '';
   const primary = name || code || 'วิชาทั่วไป';
   const codeSub = name && code ? `<span class="opacity-70 font-normal">[${esc(code)}]</span> ` : '';
-  return `<span class="px-2.5 py-1 rounded-full bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-[11px] font-semibold whitespace-nowrap">
+  return `<span class="px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-[10px] font-semibold whitespace-nowrap truncate max-w-[140px]">
       ${codeSub}${esc(primary)}
     </span>`;
 }
 
 function renderSubjectChips() {
   const wrap = document.getElementById('subjectChips');
-  const chips = [`<button data-filter="__all" class="chip px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap ${state.activeSubjectFilter === null ? 'bg-brand-600 text-white' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800'}">ทั้งหมด</button>`];
+  const chips = [`<button data-filter="__all" class="chip px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap shrink-0 ${state.activeSubjectFilter === null ? 'bg-brand-600 text-white' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'}">ทั้งหมด</button>`];
   state.subjects.forEach(s => {
     const active = state.activeSubjectFilter === s.id;
-    chips.push(`<button data-filter="${esc(s.id)}" class="chip px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap ${active ? 'bg-brand-600 text-white' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800'}">
+    chips.push(`<button data-filter="${esc(s.id)}" class="chip px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap shrink-0 ${active ? 'bg-brand-600 text-white' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'}">
         📘 ${esc(s.subject_name || s.subject_code || '')}
       </button>`);
   });
@@ -656,6 +700,7 @@ function toggleCompleted(taskId) {
   const done = JSON.parse(localStorage.getItem('cht_completed') || '{}');
   done[taskId] = !done[taskId];
   localStorage.setItem('cht_completed', JSON.stringify(done));
+  updateTabCounts();
 }
 
 function daysUntil(dateStr) {
@@ -666,8 +711,17 @@ function daysUntil(dateStr) {
 }
 
 function renderTasks() {
-  const list = state.tasks
-    .filter(t => state.activeSubjectFilter === null || t.subject_id === state.activeSubjectFilter);
+  updateTabCounts();
+
+  let list = state.tasks;
+  if (state.activeSubjectFilter !== null) {
+    list = list.filter(t => t.subject_id === state.activeSubjectFilter);
+  }
+  if (state.statusFilter === 'PENDING') {
+    list = list.filter(t => !isCompleted(t.id));
+  } else if (state.statusFilter === 'COMPLETED') {
+    list = list.filter(t => isCompleted(t.id));
+  }
 
   const container = document.getElementById('taskList');
   const empty = document.getElementById('emptyState');
@@ -696,25 +750,25 @@ function renderTasks() {
     const thumbs = images.slice(0, 3).map((img, i) => {
       const u = safeUrl(img.url || img);
       if (!u) return '';
-      return `<img src="${esc(u)}" data-task="${esc(task.id)}" data-idx="${i}" class="task-thumb w-14 h-14 object-cover rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer">`;
+      return `<img src="${esc(u)}" data-task="${esc(task.id)}" data-idx="${i}" class="task-thumb w-12 h-12 sm:w-14 sm:h-14 object-cover rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer">`;
     }).join('');
 
     return `
-    <div class="task-card bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm ${done ? 'opacity-55' : ''}">
+    <div class="task-card bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 shadow-sm min-w-0 ${done ? 'opacity-55' : ''}">
       <div class="flex items-start justify-between gap-2 mb-2">
-        <div class="flex flex-wrap items-center gap-1.5">
+        <div class="flex flex-wrap items-center gap-1.5 min-w-0 flex-1">
           ${subjectBadgeHtml(subject)}
           <span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300">${task.task_type === 'GROUP' ? 'งานกลุ่ม' : 'งานเดี่ยว'}</span>
-          <span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300">~${esc(task.estimated_minutes || 20)} นาที</span>
+          <span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300">~${esc(task.estimated_minutes || 20)} น.</span>
         </div>
-        <button data-toggle-done="${esc(task.id)}" class="shrink-0 w-7 h-7 rounded-full border-2 flex items-center justify-center transition ${done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600'}">
-          ${done ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}
+        <button data-toggle-done="${esc(task.id)}" class="shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition ${done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600'}">
+          ${done ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : ''}
         </button>
       </div>
-      <h3 class="font-display font-semibold text-sm mb-1 ${done ? 'line-through' : ''}">${esc(task.title)}</h3>
-      <div class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-2">${linkifyText(task.description || '')}</div>
+      <h3 class="font-display font-semibold text-xs sm:text-sm mb-1 ${done ? 'line-through text-slate-400' : ''}">${esc(task.title)}</h3>
+      <div class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-2 break-words">${linkifyText(task.description || '')}</div>
       ${thumbs ? `<div class="flex gap-1.5 mb-2">${thumbs}</div>` : ''}
-      <div class="flex items-center justify-between mt-3 pt-2 border-t border-slate-100 dark:border-slate-800/60">
+      <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/60">
         ${dueBadge || '<span></span>'}
         ${state.isRep ? `<div class="flex gap-1.5">
           <button data-edit-task="${esc(task.id)}" class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
@@ -774,17 +828,33 @@ document.getElementById('lightboxNext').addEventListener('click', () => {
 });
 
 /* ==============================================================================
-   WORKLOAD ANALYTICS (Canvas Bar Chart)
+   WORKLOAD ANALYTICS (Bulletproof Canvas Bar Chart)
    ============================================================================== */
+function drawBar(ctx, x, y, width, height, radius) {
+  if (height <= 0) return;
+  if (typeof ctx.roundRect === 'function') {
+    ctx.beginPath();
+    ctx.roundRect(x, y, width, height, [radius, radius, 0, 0]);
+    ctx.fill();
+  } else {
+    // Fallback สำหรับเบราว์เซอร์มือถือที่ไม่มี roundRect
+    ctx.fillRect(x, y, width, height);
+  }
+}
+
 function renderWorkloadChart() {
   const canvas = document.getElementById('workloadChart');
+  if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
-  const width = canvas.clientWidth || canvas.parentElement.clientWidth;
+  const rect = canvas.getBoundingClientRect();
+  const width = rect.width || canvas.parentElement.clientWidth || 300;
+  const height = 110;
+
   canvas.width = width * dpr;
-  canvas.height = 120 * dpr;
+  canvas.height = height * dpr;
   ctx.scale(dpr, dpr);
-  ctx.clearRect(0, 0, width, 120);
+  ctx.clearRect(0, 0, width, height);
 
   const days = ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา'];
   const totals = [0, 0, 0, 0, 0, 0, 0];
@@ -804,24 +874,25 @@ function renderWorkloadChart() {
   const max = Math.max(...totals, 30);
   const barW = width / 7;
   const isDark = document.documentElement.classList.contains('dark');
+
   totals.forEach((val, i) => {
-    const h = (val / max) * 80;
-    const x = i * barW + barW * 0.25;
-    const barWidth = barW * 0.5;
+    const h = (val / max) * 70;
+    const x = i * barW + barW * 0.2;
+    const barWidth = barW * 0.6;
     ctx.fillStyle = val > 90 ? '#f59e0b' : (isDark ? '#59b0ff' : '#2f8fff');
-    const radius = 6;
-    ctx.beginPath();
-    ctx.roundRect(x, 92 - h, barWidth, h, [radius, radius, 0, 0]);
-    ctx.fill();
+    drawBar(ctx, x, 85 - h, barWidth, h, 4);
+
     ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
-    ctx.font = '11px "Noto Sans Thai", sans-serif';
+    ctx.font = '10px "Noto Sans Thai", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(days[i], x + barWidth / 2, 110);
+    ctx.fillText(days[i], x + barWidth / 2, 102);
   });
 
   const alertEl = document.getElementById('workloadAlert');
-  const heavyDays = totals.filter(v => v > 90).length;
-  alertEl.classList.toggle('hidden', heavyDays === 0);
+  if (alertEl) {
+    const heavyDays = totals.filter(v => v > 90).length;
+    alertEl.classList.toggle('hidden', heavyDays === 0);
+  }
 }
 window.addEventListener('resize', () => renderWorkloadChart());
 
@@ -835,6 +906,7 @@ function populateSubjectSelects() {
   }).join('');
   ['taskSubject', 'aiSubject'].forEach(id => {
     const sel = document.getElementById(id);
+    if (!sel) return;
     const current = sel.value;
     sel.innerHTML = `<option value="">-- ไม่ระบุวิชา --</option>` + options;
     if (current) sel.value = current;
@@ -914,7 +986,7 @@ function renderTaskImagePreview() {
   wrap.innerHTML = state.currentTaskImages.map((img, i) => {
     const u = safeUrl(img.url || img);
     return `<div class="relative">
-      <img src="${esc(u)}" class="w-14 h-14 object-cover rounded-xl border border-slate-200 dark:border-slate-700">
+      <img src="${esc(u)}" class="w-12 h-12 object-cover rounded-xl border border-slate-200 dark:border-slate-700">
       <button data-remove-img="${i}" class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-600 text-white text-[10px] flex items-center justify-center">✕</button>
     </div>`;
   }).join('');
