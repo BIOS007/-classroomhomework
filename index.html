@@ -2,7 +2,7 @@
 <html lang="th" class="overflow-x-hidden">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>ห้องนี้มีการบ้าน — Classroom Homework Hub</title>
 
 <!-- Pinned CDN dependencies (Strict Security & SRI ready) -->
@@ -33,13 +33,46 @@
 </script>
 
 <style>
+  :root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --touch-target: 44px;
+    --desc-collapsed-height: 3.7rem;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    overscroll-behavior-y: contain;
+    background: rgb(248 250 252);
+  }
+  html.dark { background: rgb(2 6 23); }
+
   html, body {
     font-family: 'Noto Sans Thai', 'Prompt', sans-serif;
     overflow-x: hidden !important;
     width: 100%;
     max-width: 100vw;
+    min-height: 100%;
     touch-action: pan-y;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
   }
+
+  body {
+    min-height: 100dvh;
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+  }
+
+  button, [role="button"], select, input[type="button"], input[type="submit"] {
+    touch-action: manipulation;
+  }
+  button, [role="button"] { min-width: var(--touch-target); min-height: var(--touch-target); }
+  input, select, textarea { font-size: 16px; }
+  @media (min-width: 640px) { input, select, textarea { font-size: inherit; } }
   .font-display { font-family: 'Prompt', 'Noto Sans Thai', sans-serif; }
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-thumb { background: rgba(120,120,120,.3); border-radius: 8px; }
@@ -51,8 +84,12 @@
   @keyframes taskFadeIn { from { opacity:0; transform:translateY(5px);} to {opacity:1; transform:translateY(0);} }
   @keyframes checkPop { 0% {transform:scale(.35);opacity:0;} 70% {transform:scale(1.18);opacity:1;} 100% {transform:scale(1);opacity:1;} }
 
-  .safe-top { padding-top: env(safe-area-inset-top, 0px); }
-  .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .safe-top { padding-top: var(--safe-top); }
+  .safe-bottom { padding-bottom: var(--safe-bottom); }
+  .safe-x { padding-left: var(--safe-left); padding-right: var(--safe-right); }
+  .safe-modal { padding-top: max(1rem, var(--safe-top)); padding-right: max(1rem, var(--safe-right)); padding-bottom: max(1rem, var(--safe-bottom)); padding-left: max(1rem, var(--safe-left)); }
+  .safe-fab { bottom: calc(1rem + var(--safe-bottom)); right: calc(1rem + var(--safe-right)); }
+  .safe-toast { bottom: calc(5rem + var(--safe-bottom)); }
   .drag-indicator { width:36px; height:4px; border-radius:999px; background:rgba(148,163,184,.4); margin:6px auto 2px; }
 
   .task-card {
@@ -92,6 +129,112 @@
   .hide-scrollbar::-webkit-scrollbar { display:none; }
   .hide-scrollbar { -ms-overflow-style:none; scrollbar-width:none; }
 
+  .filter-control { min-height:44px; }
+  .task-description-shell {
+    position: relative;
+    overflow: hidden;
+    max-height: var(--desc-collapsed-height);
+    transition: max-height .32s cubic-bezier(.4,0,.2,1);
+    will-change: max-height;
+  }
+  .task-description-shell.is-expanded { overflow: hidden; }
+  .task-description-toggle {
+    min-height:44px;
+    padding: .45rem .25rem;
+    color:#1a6ff5;
+    font-weight:700;
+    font-size:.75rem;
+    display:inline-flex;
+    align-items:center;
+    gap:.25rem;
+    border-radius:.75rem;
+  }
+  .dark .task-description-toggle { color:#8ecdff; }
+  .task-description-toggle:focus-visible { outline:2px solid #2f8fff; outline-offset:2px; }
+  .card-action-button { width:44px; height:44px; min-width:44px; min-height:44px; }
+  .chip { min-height:44px; }
+  .modal-scroll { overscroll-behavior: contain; touch-action: pan-y; }
+  .app-main { padding-bottom: calc(7rem + var(--safe-bottom)); }
+
+
+  /* Modern EdTech Dashboard visual system */
+  body {
+    background:
+      radial-gradient(circle at 8% 3%, rgba(47,143,255,.10), transparent 28rem),
+      radial-gradient(circle at 94% 18%, rgba(124,58,237,.07), transparent 24rem),
+      rgb(248 250 252);
+  }
+  .dark body {
+    background:
+      radial-gradient(circle at 8% 3%, rgba(47,143,255,.12), transparent 28rem),
+      radial-gradient(circle at 94% 18%, rgba(124,58,237,.08), transparent 24rem),
+      rgb(2 6 23);
+  }
+  .app-header-inner { max-width: 80rem; }
+  .dashboard-shell { max-width: 80rem; }
+  .surface-card {
+    background: rgba(255,255,255,.94);
+    border: 1px solid rgba(226,232,240,.86);
+    box-shadow: 0 12px 34px rgba(148,163,184,.13);
+  }
+  .dark .surface-card {
+    background: rgba(15,23,42,.90);
+    border-color: rgba(51,65,85,.75);
+    box-shadow: 0 16px 42px rgba(0,0,0,.24);
+  }
+  .hero-panel {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #1677ff 0%, #1a6ff5 53%, #645cff 125%);
+    box-shadow: 0 18px 44px rgba(26,111,245,.22);
+  }
+  .hero-panel::after {
+    content:'';
+    position:absolute;
+    width:9rem;height:9rem;border-radius:999px;
+    right:-2.25rem;top:-3rem;
+    background:rgba(255,255,255,.10);
+    box-shadow:-7rem 7rem 0 1rem rgba(255,255,255,.045);
+    pointer-events:none;
+  }
+  .stat-card {
+    min-width: 0;
+    border-radius: 1.25rem;
+    background: rgba(255,255,255,.96);
+    border: 1px solid rgba(226,232,240,.88);
+    box-shadow: 0 8px 22px rgba(148,163,184,.11);
+  }
+  .dark .stat-card {
+    background: rgba(15,23,42,.96);
+    border-color: rgba(51,65,85,.72);
+    box-shadow: 0 10px 24px rgba(0,0,0,.18);
+  }
+  .stat-icon {
+    width:2.25rem;height:2.25rem;border-radius:.85rem;
+    display:flex;align-items:center;justify-content:center;flex:none;
+  }
+  .filter-panel { box-shadow: 0 10px 28px rgba(148,163,184,.10); }
+  .task-card {
+    border-radius: 1.5rem !important;
+    border-color: rgba(226,232,240,.82) !important;
+    box-shadow: 0 10px 30px rgba(148,163,184,.13) !important;
+  }
+  .dark .task-card { border-color: rgba(51,65,85,.72) !important; box-shadow:0 14px 34px rgba(0,0,0,.22) !important; }
+  .task-card:hover { transform:translateY(-2px); box-shadow:0 16px 38px rgba(100,116,139,.17) !important; }
+  .task-card.is-completed { opacity:.65; }
+  .desktop-sidebar { min-width:0; }
+  .task-stream { min-width:0; }
+  .section-eyebrow { letter-spacing:.08em; text-transform:uppercase; }
+  .dashboard-title-gradient {
+    background: linear-gradient(90deg,#1558e0,#645cff);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  @media (min-width: 1024px) {
+    .desktop-sidebar { position: sticky; top: calc(4.75rem + var(--safe-top)); align-self:start; max-height: calc(100dvh - 6rem - var(--safe-top)); overflow-y:auto; overscroll-behavior:contain; padding-right:.15rem; }
+    .task-stream #taskList { grid-template-columns: minmax(0,1fr); }
+    .task-card { padding:1.125rem !important; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       scroll-behavior:auto !important;
@@ -107,93 +250,136 @@
 
 <div>
   <!-- ============================= TOP NAV ============================= -->
-  <header class="safe-top sticky top-0 z-30 backdrop-blur-md bg-white/90 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-2">
-      <div class="flex items-center gap-2 min-w-0 flex-1 cursor-pointer" id="btnChangeRoom">
-        <div class="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shrink-0 shadow-sm">
+  <header class="safe-top sticky top-0 z-30 border-b border-white/60 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/82 backdrop-blur-xl">
+    <div class="app-header-inner mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer min-h-[44px] rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500" id="btnChangeRoom" role="button" tabindex="0">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center text-white shrink-0 shadow-lg shadow-brand-500/20">
           <i data-lucide="graduation-cap" class="w-5 h-5"></i>
         </div>
         <div class="min-w-0">
-          <h1 class="font-display font-bold text-sm sm:text-base leading-tight truncate">ห้องนี้มีการบ้าน</h1>
+          <h1 class="font-display font-extrabold text-sm sm:text-base leading-tight truncate tracking-tight">ห้องนี้มีการบ้าน</h1>
           <p id="roomLabel" class="text-[11px] text-brand-600 dark:text-brand-400 font-semibold leading-tight truncate">กำลังโหลดห้อง...</p>
         </div>
       </div>
 
       <div class="flex items-center gap-1.5 shrink-0">
         <button id="btnLineShare" title="แชร์ผ่าน LINE"
-          class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-white text-xs font-semibold shadow-sm transition active:scale-95">
+          class="hidden sm:inline-flex min-h-[44px] items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#06C755] hover:bg-[#05b34c] text-white text-xs font-semibold shadow-lg shadow-emerald-500/10 transition active:scale-95">
           <i data-lucide="share-2" class="w-4 h-4"></i> แชร์ห้อง
         </button>
         <button id="btnLineBot" title="ดึงบอทเข้ากลุ่ม LINE"
-          class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition active:scale-95">
-          <i data-lucide="bot" class="w-4 h-4"></i>
-          <span class="hidden sm:inline">ดึงบอทเข้ากลุ่ม LINE</span>
+          class="inline-flex min-h-[44px] items-center gap-1.5 px-3 py-2 rounded-2xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 text-xs font-semibold shadow-sm transition active:scale-95">
+          <i data-lucide="bot" class="w-4 h-4 text-emerald-500"></i>
+          <span class="hidden md:inline">LINE Bot</span>
         </button>
-        <button id="btnDarkToggle" title="สลับธีมสี" class="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition active:scale-95">
+        <button id="btnDarkToggle" title="สลับธีมสี" class="w-11 h-11 flex items-center justify-center rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm transition active:scale-95">
           <i data-lucide="sun-moon" class="w-4 h-4"></i>
         </button>
-        <button id="btnRepMode" title="โหมดตัวแทนห้อง" class="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition active:scale-95">
+        <button id="btnRepMode" title="โหมดตัวแทนห้อง" class="w-11 h-11 flex items-center justify-center rounded-2xl bg-slate-950 dark:bg-white text-white dark:text-slate-950 border border-slate-950 dark:border-white shadow-sm transition active:scale-95">
           <i data-lucide="shield-check" class="w-4 h-4"></i>
         </button>
       </div>
     </div>
   </header>
 
-  <main class="max-w-6xl mx-auto px-4 sm:px-6 pb-28 w-full min-w-0">
-
-    <!-- Workload analytics -->
-    <section class="mt-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 shadow-sm overflow-hidden">
-      <div class="flex items-center justify-between mb-2">
-        <h2 class="font-display font-semibold text-xs sm:text-sm flex items-center gap-1.5">
-          <i data-lucide="bar-chart-3" class="w-4 h-4 text-brand-600"></i> ภาระงานรายสัปดาห์
-        </h2>
-        <span id="workloadAlert" class="hidden text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 font-medium">
-          ⚠️ สัปดาห์นี้งานเยอะ
-        </span>
+  <main class="app-main dashboard-shell mx-auto px-4 sm:px-6 w-full min-w-0 pt-4 sm:pt-5">
+    <section class="hero-panel rounded-3xl p-5 sm:p-6 text-white mb-3.5 lg:mb-5">
+      <div class="relative z-10 max-w-2xl">
+        <p class="section-eyebrow text-[10px] sm:text-xs font-bold text-blue-100 mb-1.5">Classroom Homework Hub</p>
+        <h2 class="font-display font-extrabold text-xl sm:text-2xl leading-tight">จัดการการบ้านให้ง่าย เห็นทุกเดดไลน์ในที่เดียว</h2>
+        <p class="mt-1.5 text-xs sm:text-sm text-blue-100/95 max-w-xl">เช็กงานค้าง ค้นหางาน และดูภาระงานรายสัปดาห์ได้ทันทีบนมือถือ แท็บเล็ต และเดสก์ท็อป</p>
       </div>
-      <div id="workloadChart" class="w-full relative h-32 grid grid-cols-7 gap-2 sm:gap-3 items-end pt-7" aria-label="กราฟภาระงานรายสัปดาห์"></div>
     </section>
 
-    <!-- STATUS FILTER TABS (งานทั้งหมด / ยังไม่เสร็จ / เสร็จแล้ว) -->
-    <section class="mt-3.5 flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 rounded-xl w-full" id="statusTabs">
-      <button data-status="ALL" class="status-tab flex-1 py-1.5 rounded-lg text-xs font-semibold text-center transition bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm">
-        ทั้งหมด <span id="countAll" class="text-[10px] opacity-75">(0)</span>
-      </button>
-      <button data-status="PENDING" class="status-tab flex-1 py-1.5 rounded-lg text-xs font-semibold text-center transition text-slate-600 dark:text-slate-400 hover:text-slate-900">
-        ยังไม่เสร็จ <span id="countPending" class="text-[10px] opacity-75">(0)</span>
-      </button>
-      <button data-status="COMPLETED" class="status-tab flex-1 py-1.5 rounded-lg text-xs font-semibold text-center transition text-slate-600 dark:text-slate-400 hover:text-slate-900">
-        เสร็จแล้ว <span id="countDone" class="text-[10px] opacity-75">(0)</span>
-      </button>
+    <!-- Mini summary stats -->
+    <section class="grid grid-cols-3 gap-2 sm:gap-3 mb-4 lg:mb-5" aria-label="สรุปสถานะการบ้าน">
+      <div class="stat-card p-3 sm:p-3.5 flex items-center gap-2.5">
+        <div class="stat-icon bg-brand-50 dark:bg-brand-900/35 text-brand-600 dark:text-brand-300"><i data-lucide="notebook-tabs" class="w-4 h-4"></i></div>
+        <div class="min-w-0"><p class="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate">งานทั้งหมด</p><p id="statTotal" class="font-display text-lg sm:text-xl font-extrabold leading-none mt-1">0</p></div>
+      </div>
+      <div class="stat-card p-3 sm:p-3.5 flex items-center gap-2.5">
+        <div class="stat-icon bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-300"><i data-lucide="clock-3" class="w-4 h-4"></i></div>
+        <div class="min-w-0"><p class="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate">ยังไม่เสร็จ</p><p id="statPending" class="font-display text-lg sm:text-xl font-extrabold leading-none mt-1">0</p></div>
+      </div>
+      <div class="stat-card p-3 sm:p-3.5 flex items-center gap-2.5">
+        <div class="stat-icon bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300"><i data-lucide="calendar-clock" class="w-4 h-4"></i></div>
+        <div class="min-w-0"><p class="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate">วันนี้/พรุ่งนี้</p><p id="statDueSoon" class="font-display text-lg sm:text-xl font-extrabold leading-none mt-1">0</p></div>
+      </div>
     </section>
 
-    <!-- Subject filter chips -->
-    <section class="mt-2.5 flex items-center gap-1.5 overflow-x-auto hide-scrollbar py-1 w-full min-w-0" id="subjectChips"></section>
+    <div class="lg:grid lg:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[370px_minmax(0,1fr)] lg:gap-5 xl:gap-6 items-start">
+      <!-- DESKTOP LEFT / MOBILE TOP CONTROLS -->
+      <aside class="desktop-sidebar space-y-3.5">
+        <section class="surface-card rounded-3xl p-4 overflow-hidden">
+          <div class="flex items-center justify-between mb-2.5">
+            <div>
+              <p class="section-eyebrow text-[9px] font-bold text-slate-400">Weekly overview</p>
+              <h2 class="font-display font-bold text-sm flex items-center gap-1.5 mt-0.5"><i data-lucide="bar-chart-3" class="w-4 h-4 text-brand-600"></i> ภาระงานรายสัปดาห์</h2>
+            </div>
+            <span id="workloadAlert" class="hidden text-[10px] px-2 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 font-semibold">งานเยอะ</span>
+          </div>
+          <div id="workloadChart" class="w-full relative h-32 grid grid-cols-7 gap-2 items-end pt-7" aria-label="กราฟภาระงานรายสัปดาห์"></div>
+        </section>
 
-    <!-- Task list -->
-    <section id="taskList" class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 w-full"></section>
+        <section class="surface-card filter-panel rounded-3xl p-3.5 sm:p-4" aria-label="ตัวกรองการบ้าน">
+          <div class="flex items-center gap-2 mb-3"><span class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center"><i data-lucide="list-filter" class="w-4 h-4 text-slate-500"></i></span><div><p class="font-display font-bold text-xs">ตัวกรอง</p><p class="text-[10px] text-slate-400">เลือกเฉพาะงานที่ต้องการดู</p></div></div>
+          <div class="flex items-center gap-1.5 p-1 bg-slate-100/90 dark:bg-slate-800/80 rounded-2xl w-full" id="statusTabs">
+            <button data-status="ALL" class="status-tab flex-1 min-h-[44px] py-1.5 rounded-xl text-[11px] font-semibold text-center transition bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-300 shadow-sm">ทั้งหมด <span id="countAll" class="text-[10px] opacity-75">(0)</span></button>
+            <button data-status="PENDING" class="status-tab flex-1 min-h-[44px] py-1.5 rounded-xl text-[11px] font-semibold text-center transition text-slate-600 dark:text-slate-400">ค้าง <span id="countPending" class="text-[10px] opacity-75">(0)</span></button>
+            <button data-status="COMPLETED" class="status-tab flex-1 min-h-[44px] py-1.5 rounded-xl text-[11px] font-semibold text-center transition text-slate-600 dark:text-slate-400">เสร็จ <span id="countDone" class="text-[10px] opacity-75">(0)</span></button>
+          </div>
+          <div class="mt-2.5 flex items-center gap-1.5 overflow-x-auto hide-scrollbar py-1 w-full min-w-0" id="subjectChips"></div>
+        </section>
+      </aside>
 
-    <div id="emptyState" class="hidden text-center py-12 text-slate-400">
-      <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2 text-slate-300 dark:text-slate-700"></i>
-      <p class="text-xs sm:text-sm font-medium">ไม่พบรายการการบ้านตามเงื่อนไข</p>
+      <!-- RIGHT TASK STREAM -->
+      <section class="task-stream mt-4 lg:mt-0 min-w-0">
+        <div class="surface-card rounded-3xl p-3 sm:p-4 mb-3.5">
+          <div class="flex items-end justify-between gap-3 mb-3">
+            <div class="min-w-0"><p class="section-eyebrow text-[9px] font-bold text-brand-500">Assignments</p><h2 class="font-display text-base sm:text-lg font-extrabold dashboard-title-gradient truncate">รายการการบ้าน</h2></div>
+            <span id="visibleTaskCount" class="text-[10px] sm:text-xs font-semibold text-slate-400 whitespace-nowrap">0 รายการ</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-[1fr_190px] gap-2.5" aria-label="ค้นหาและจัดเรียงการบ้าน">
+            <label class="relative block min-w-0">
+              <span class="sr-only">ค้นหาการบ้าน</span>
+              <i data-lucide="search" class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+              <input id="taskSearch" type="search" autocomplete="off" inputmode="search" placeholder="ค้นหางาน วิชา หรือรายละเอียด..." class="filter-control w-full pl-10 pr-10 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+              <button id="btnClearSearch" type="button" aria-label="ล้างคำค้นหา" class="hidden flex absolute right-0 top-1/2 -translate-y-1/2 w-11 h-11 items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </label>
+            <label class="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 min-w-0">
+              <i data-lucide="arrow-up-down" class="w-4 h-4 text-slate-400 shrink-0"></i><span class="sr-only">จัดเรียงการบ้าน</span>
+              <select id="taskSort" class="filter-control w-full bg-transparent outline-none text-xs font-semibold text-slate-700 dark:text-slate-200">
+                <option value="due-asc">ส่งใกล้สุด</option><option value="due-desc">ส่งไกลสุด</option><option value="newest">เพิ่มล่าสุด</option><option value="workload">ภาระงาน (นาที)</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <section id="taskList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-3.5 w-full"></section>
+        <div id="emptyState" class="hidden surface-card rounded-3xl text-center py-12 px-4 text-slate-400">
+          <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center"><i data-lucide="inbox" class="w-6 h-6 text-slate-300 dark:text-slate-600"></i></div>
+          <p class="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400">ไม่พบรายการการบ้านตามเงื่อนไข</p>
+          <p class="text-[10px] mt-1">ลองเปลี่ยนคำค้นหา หรือตัวกรองด้านบน</p>
+        </div>
+      </section>
     </div>
   </main>
 </div>
 
 <!-- ============================= FABs (Representative mode only) ============================= -->
-<div id="fabWrap" class="hidden fixed bottom-6 right-4 z-40 flex flex-col items-end gap-2.5 safe-bottom">
-  <button id="fabCamera" title="AI สแกนการบ้าน" class="fab-pulse w-[52px] h-[52px] sm:w-14 sm:h-14 rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-600/30 flex items-center justify-center transition-transform duration-200 hover:scale-105 active:scale-95">
+<div id="fabWrap" class="hidden fixed z-40 flex flex-col items-end gap-2.5 safe-fab">
+  <button id="fabCamera" title="AI สแกนการบ้าน" class="fab-pulse w-[52px] h-[52px] sm:w-14 sm:h-14 rounded-2xl bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-600/30 flex items-center justify-center transition-transform duration-200 hover:scale-105 active:scale-95">
     <i data-lucide="camera" class="w-6 h-6"></i>
   </button>
-  <button id="fabPlus" title="เพิ่มการบ้านใหม่" class="w-[52px] h-[52px] sm:w-14 sm:h-14 rounded-full bg-brand-600 hover:bg-brand-700 text-white shadow-lg shadow-brand-600/30 flex items-center justify-center transition-transform duration-200 hover:scale-105 active:scale-95">
+  <button id="fabPlus" title="เพิ่มการบ้านใหม่" class="w-[52px] h-[52px] sm:w-14 sm:h-14 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white shadow-lg shadow-brand-600/30 flex items-center justify-center transition-transform duration-200 hover:scale-105 active:scale-95">
     <i data-lucide="plus" class="w-6 h-6"></i>
   </button>
   <input id="cameraInput" type="file" accept="image/*" capture="environment" class="hidden">
 </div>
 
 <!-- ============================= CLASSROOM PICKER ============================= -->
-<div id="pickerOverlay" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-  <div class="modal-panel bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-5 safe-bottom border border-slate-200 dark:border-slate-800 shadow-2xl">
+<div id="pickerOverlay" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center px-4 safe-modal">
+  <div class="modal-panel bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm p-5 safe-bottom border border-slate-200 dark:border-slate-800 shadow-2xl">
     <div class="drag-indicator sm:hidden"></div>
     <h2 class="font-display font-bold text-base sm:text-lg mb-1 flex items-center gap-2"><i data-lucide="school" class="w-5 h-5 text-brand-600"></i> เลือกห้องเรียน</h2>
     <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">เลือกระดับชั้นและห้องของคุณเพื่อเริ่มใช้งาน</p>
@@ -212,11 +398,11 @@
 </div>
 
 <!-- ============================= PASSCODE GATE ============================= -->
-<div id="passcodeOverlay" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
-  <div class="modal-panel bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-5 safe-bottom border border-slate-200 dark:border-slate-800 shadow-2xl">
+<div id="passcodeOverlay" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center px-4 safe-modal">
+  <div class="modal-panel bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm p-5 safe-bottom border border-slate-200 dark:border-slate-800 shadow-2xl">
     <div class="flex items-center justify-between mb-3">
       <h2 class="font-display font-bold text-base flex items-center gap-2"><i data-lucide="lock" class="w-5 h-5 text-brand-600"></i> รหัสตัวแทนห้อง</h2>
-      <button data-close="passcodeOverlay" class="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+      <button data-close="passcodeOverlay" class="w-11 h-11 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
         <i data-lucide="x" class="w-4 h-4"></i>
       </button>
     </div>
@@ -230,10 +416,10 @@
 
 <!-- ============================= TASK MODAL (Add/Edit) ============================= -->
 <div id="taskModalOverlay" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-end sm:items-center justify-center">
-  <div class="modal-panel bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto safe-bottom border border-slate-200 dark:border-slate-800 shadow-2xl">
+  <div class="modal-panel bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg max-h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-1rem)] overflow-y-auto modal-scroll safe-bottom border border-slate-200 dark:border-slate-800 shadow-2xl">
     <div class="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md safe-top z-10 border-b border-slate-100 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
       <h2 id="taskModalTitle" class="font-display font-bold text-sm sm:text-base">เพิ่มการบ้าน</h2>
-      <button data-close="taskModalOverlay" class="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+      <button data-close="taskModalOverlay" class="w-11 h-11 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
         <i data-lucide="x" class="w-4 h-4"></i>
       </button>
     </div>
@@ -298,10 +484,10 @@
 
 <!-- ============================= AI REVIEW MODAL ============================= -->
 <div id="aiReviewOverlay" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-end sm:items-center justify-center">
-  <div class="modal-panel bg-white dark:bg-slate-900 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm max-h-[90vh] overflow-y-auto safe-bottom border border-slate-200 dark:border-slate-800 shadow-2xl">
+  <div class="modal-panel bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-sm max-h-[calc(100dvh-var(--safe-top)-var(--safe-bottom)-1rem)] overflow-y-auto modal-scroll safe-bottom border border-slate-200 dark:border-slate-800 shadow-2xl">
     <div class="sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md safe-top z-10 border-b border-slate-100 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
       <h2 class="font-display font-bold text-sm flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-violet-600"></i> AI สแกนการบ้าน</h2>
-      <button data-close="aiReviewOverlay" class="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+      <button data-close="aiReviewOverlay" class="w-11 h-11 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
         <i data-lucide="x" class="w-4 h-4"></i>
       </button>
     </div>
@@ -332,20 +518,20 @@
 </div>
 
 <!-- ============================= LIGHTBOX ============================= -->
-<div id="lightboxOverlay" class="hidden fixed inset-0 z-[60] bg-black/90 backdrop-blur flex items-center justify-center p-2">
-  <button id="lightboxClose" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center">
+<div id="lightboxOverlay" class="hidden fixed inset-0 z-[60] bg-black/90 backdrop-blur flex items-center justify-center px-2 safe-modal">
+  <button id="lightboxClose" class="absolute top-[calc(1rem+var(--safe-top))] right-[calc(1rem+var(--safe-right))] w-11 h-11 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center">
     <i data-lucide="x" class="w-5 h-5"></i>
   </button>
-  <button id="lightboxPrev" class="absolute left-2 sm:left-6 w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center">
+  <button id="lightboxPrev" class="absolute left-[calc(.5rem+var(--safe-left))] sm:left-6 w-11 h-11 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center">
     <i data-lucide="chevron-left" class="w-5 h-5"></i>
   </button>
-  <button id="lightboxNext" class="absolute right-2 sm:right-6 w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center">
+  <button id="lightboxNext" class="absolute right-[calc(.5rem+var(--safe-right))] sm:right-6 w-11 h-11 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center">
     <i data-lucide="chevron-right" class="w-5 h-5"></i>
   </button>
   <img id="lightboxImg" class="max-w-[92vw] max-h-[86vh] object-contain rounded-lg shadow-2xl" alt="ภาพขยาย">
 </div>
 
-<div id="toast" class="hidden fixed bottom-20 left-1/2 -translate-x-1/2 z-[70] bg-slate-900/95 text-white text-xs px-4 py-2.5 rounded-full shadow-2xl font-medium backdrop-blur"></div>
+<div id="toast" class="hidden fixed safe-toast left-1/2 -translate-x-1/2 z-[70] bg-slate-900/95 text-white text-xs px-4 py-2.5 rounded-full shadow-2xl font-medium backdrop-blur"></div>
 
 <script>
 /* ==============================================================================
@@ -378,16 +564,6 @@ function safeUrl(url) {
     }
     return '';
   } catch (e) { return ''; }
-}
-
-function esc(str) {
-  if (str === null || str === undefined) return '';
-  return String(str)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
 }
 
 function clearElement(element) {
@@ -487,10 +663,18 @@ async function submitPasscode() {
 
   if (!val) { status.textContent = 'กรุณากรอกรหัสผ่าน'; return; }
 
+  if (!state.room?.id) { status.textContent = 'ยังไม่ได้เลือกห้องเรียน'; return; }
+
   const { data: isValid, error } = await supabase.rpc('verify_classroom_passcode', {
     p_classroom_id: state.room.id,
     p_passcode: val
   });
+
+  if (error) {
+    status.textContent = 'ตรวจสอบรหัสผ่านไม่สำเร็จ กรุณาลองใหม่';
+    console.error('verify_classroom_passcode RPC failed', error);
+    return;
+  }
 
   if (isValid === true) {
     setAttempts(0);
@@ -520,19 +704,51 @@ async function submitPasscode() {
 /* ==============================================================================
    APP STATE & MODALS
    ============================================================================== */
+const FILTER_STATE_KEY = 'cht_filter_state_v2';
+const ALLOWED_STATUS_FILTERS = new Set(['ALL', 'PENDING', 'COMPLETED']);
+const ALLOWED_SORTS = new Set(['due-asc', 'due-desc', 'newest', 'workload']);
+
+function loadPersistedFilterState() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(FILTER_STATE_KEY) || '{}');
+    return {
+      statusFilter: ALLOWED_STATUS_FILTERS.has(parsed.statusFilter) ? parsed.statusFilter : 'ALL',
+      activeSubjectFilter: parsed.activeSubjectFilter === null || typeof parsed.activeSubjectFilter === 'string' ? parsed.activeSubjectFilter : null,
+      sortMode: ALLOWED_SORTS.has(parsed.sortMode) ? parsed.sortMode : 'due-asc'
+    };
+  } catch (error) {
+    return { statusFilter: 'ALL', activeSubjectFilter: null, sortMode: 'due-asc' };
+  }
+}
+
+const persistedFilters = loadPersistedFilterState();
 const state = {
   room: null,
   subjects: [],
   tasks: [],
-  statusFilter: 'ALL', // 'ALL' | 'PENDING' | 'COMPLETED'
+  statusFilter: persistedFilters.statusFilter,
   isRep: sessionStorage.getItem('cht_is_rep') === '1',
-  activeSubjectFilter: null,
+  activeSubjectFilter: persistedFilters.activeSubjectFilter,
+  sortMode: persistedFilters.sortMode,
+  searchQuery: '',
   currentTaskImages: [],
   currentTaskAttachments: [],
   lightboxImages: [],
   lightboxIndex: 0,
   aiPendingImage: null,
 };
+
+function persistFilterState() {
+  localStorage.setItem(FILTER_STATE_KEY, JSON.stringify({
+    statusFilter: state.statusFilter,
+    activeSubjectFilter: state.activeSubjectFilter,
+    sortMode: state.sortMode
+  }));
+}
+
+function haptic(ms = 10) {
+  try { navigator.vibrate?.(ms); } catch (error) { /* vibration is optional */ }
+}
 
 function toast(msg) {
   const t = document.getElementById('toast');
@@ -586,6 +802,9 @@ function populatePicker() {
 populatePicker();
 
 document.getElementById('btnChangeRoom').addEventListener('click', () => openModal('pickerOverlay'));
+document.getElementById('btnChangeRoom').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal('pickerOverlay'); }
+});
 
 document.getElementById('btnEnterRoom').addEventListener('click', async () => {
   const grade = parseInt(document.getElementById('pickGrade').value, 10);
@@ -596,7 +815,13 @@ document.getElementById('btnEnterRoom').addEventListener('click', async () => {
     const { data, error } = await supabase.rpc('get_or_create_classroom', { p_grade: grade, p_room: room });
     if (error) throw error;
     const roomRow = Array.isArray(data) ? data[0] : data;
+    const previousRoomId = state.room?.id || null;
     state.room = roomRow;
+    if (previousRoomId && previousRoomId !== roomRow?.id) {
+      state.isRep = false;
+      sessionStorage.removeItem('cht_is_rep');
+      document.getElementById('fabWrap').classList.add('hidden');
+    }
     localStorage.setItem('cht_room', JSON.stringify(roomRow));
     document.getElementById('roomLabel').textContent = `ม.${grade}/${room} (แตะเพื่อเปลี่ยนห้อง)`;
     closeModal('pickerOverlay');
@@ -660,6 +885,11 @@ document.getElementById('btnLineBot').addEventListener('click', () => {
    ============================================================================== */
 async function loadEverything() {
   await Promise.all([loadSubjects(), loadTasks()]);
+  if (state.activeSubjectFilter !== null && !state.subjects.some(subject => String(subject.id) === String(state.activeSubjectFilter))) {
+    state.activeSubjectFilter = null;
+    persistFilterState();
+  }
+  syncFilterControls();
   renderSubjectChips();
   renderTasks();
   renderWorkloadChart();
@@ -693,11 +923,12 @@ async function loadTasks() {
 document.querySelectorAll('#statusTabs button').forEach(btn => {
   btn.addEventListener('click', () => {
     state.statusFilter = btn.dataset.status;
+    persistFilterState();
     document.querySelectorAll('#statusTabs button').forEach(b => {
       if (b.dataset.status === state.statusFilter) {
-        b.className = 'status-tab flex-1 py-1.5 rounded-lg text-xs font-semibold text-center transition bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm';
+        b.className = 'status-tab flex-1 min-h-[44px] py-1.5 rounded-xl text-[11px] font-semibold text-center transition bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-300 shadow-sm';
       } else {
-        b.className = 'status-tab flex-1 py-1.5 rounded-lg text-xs font-semibold text-center transition text-slate-600 dark:text-slate-400 hover:text-slate-900';
+        b.className = 'status-tab flex-1 min-h-[44px] py-1.5 rounded-xl text-[11px] font-semibold text-center transition text-slate-600 dark:text-slate-400 hover:text-slate-900';
       }
     });
     renderTasks();
@@ -712,6 +943,27 @@ function updateTabCounts() {
   document.getElementById('countAll').textContent = `(${total})`;
   document.getElementById('countPending').textContent = `(${pending})`;
   document.getElementById('countDone').textContent = `(${done})`;
+}
+
+function updateSummaryStats() {
+  const total = state.tasks.length;
+  const pending = state.tasks.filter(task => !isCompleted(task.id)).length;
+  const dueSoon = state.tasks.filter(task => {
+    if (isCompleted(task.id) || !task.due_date) return false;
+    const due = new Date(task.due_date);
+    if (Number.isNaN(due.getTime())) return false;
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const dueStart = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+    const diff = Math.round((dueStart - todayStart) / 86400000);
+    return diff === 0 || diff === 1;
+  }).length;
+  const totalEl = document.getElementById('statTotal');
+  const pendingEl = document.getElementById('statPending');
+  const dueSoonEl = document.getElementById('statDueSoon');
+  if (totalEl) totalEl.textContent = String(total);
+  if (pendingEl) pendingEl.textContent = String(pending);
+  if (dueSoonEl) dueSoonEl.textContent = String(dueSoon);
 }
 
 /* ==============================================================================
@@ -756,6 +1008,7 @@ function createSubjectChip(label, filterValue, active) {
   button.textContent = label;
   button.addEventListener('click', () => {
     state.activeSubjectFilter = filterValue === '__all' ? null : filterValue;
+    persistFilterState();
     renderSubjectChips();
     renderTasks();
     lucide.createIcons();
@@ -776,6 +1029,133 @@ function renderSubjectChips() {
 }
 
 /* ==============================================================================
+   QOL: SEARCH, SORTING, PERSISTED FILTERS & CLIPBOARD
+   ============================================================================== */
+function normalizeSearchText(value) {
+  return String(value ?? '').normalize('NFKC').toLocaleLowerCase('th-TH').trim();
+}
+
+function taskMatchesSearch(task, query) {
+  const q = normalizeSearchText(query);
+  if (!q) return true;
+  const subject = task.subjects || subjectById(task.subject_id) || {};
+  const haystack = [task.title, task.description, subject.subject_code, subject.subject_name]
+    .map(normalizeSearchText)
+    .join(' ');
+  return haystack.includes(q);
+}
+
+function dueTimestamp(task, fallback) {
+  if (!task?.due_date) return fallback;
+  const value = new Date(task.due_date).getTime();
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function createdTimestamp(task) {
+  const candidate = task?.created_at || task?.inserted_at || task?.updated_at || null;
+  const value = candidate ? new Date(candidate).getTime() : NaN;
+  return Number.isFinite(value) ? value : 0;
+}
+
+function sortTasks(list) {
+  const sorted = [...list];
+  if (state.sortMode === 'due-desc') {
+    sorted.sort((a, b) => dueTimestamp(b, -Infinity) - dueTimestamp(a, -Infinity));
+  } else if (state.sortMode === 'newest') {
+    sorted.sort((a, b) => createdTimestamp(b) - createdTimestamp(a));
+  } else if (state.sortMode === 'workload') {
+    sorted.sort((a, b) => (Number(b.estimated_minutes) || 20) - (Number(a.estimated_minutes) || 20));
+  } else {
+    sorted.sort((a, b) => dueTimestamp(a, Infinity) - dueTimestamp(b, Infinity));
+  }
+  return sorted;
+}
+
+function formatTaskShareText(task) {
+  const subject = task.subjects || subjectById(task.subject_id) || {};
+  const subjectLabel = [subject.subject_code, subject.subject_name].filter(Boolean).join(' — ') || 'วิชาทั่วไป';
+  const due = task.due_date ? new Date(task.due_date).toLocaleString('th-TH', { dateStyle:'medium', timeStyle:'short' }) : 'ไม่ระบุ';
+  const description = String(task.description || '').trim() || '-';
+  const link = safeUrl(window.location.href) || window.location.href;
+  return `📚 ${String(task.title || 'การบ้าน')}
+วิชา: ${subjectLabel}
+กำหนดส่ง: ${due}
+ภาระงาน: ~${Number(task.estimated_minutes) || 20} นาที
+
+${description}
+
+เปิดห้องการบ้าน: ${link}`;
+}
+
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard?.writeText && window.isSecureContext) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  textarea.style.pointerEvents = 'none';
+  document.body.appendChild(textarea);
+  textarea.select();
+  const ok = document.execCommand('copy');
+  textarea.remove();
+  if (!ok) throw new Error('Clipboard copy unavailable');
+}
+
+async function shareOrCopyTask(task) {
+  try {
+    await copyTextToClipboard(formatTaskShareText(task));
+    toast('คัดลอกรายละเอียดการบ้านแล้ว');
+  } catch (error) {
+    console.error(error);
+    toast('คัดลอกไม่สำเร็จ กรุณาลองใหม่');
+  }
+}
+
+function syncFilterControls() {
+  const search = document.getElementById('taskSearch');
+  const sort = document.getElementById('taskSort');
+  const clear = document.getElementById('btnClearSearch');
+  if (search) search.value = state.searchQuery;
+  if (sort) sort.value = state.sortMode;
+  if (clear) clear.classList.toggle('hidden', !state.searchQuery);
+
+  document.querySelectorAll('#statusTabs button').forEach(btn => {
+    const active = btn.dataset.status === state.statusFilter;
+    btn.className = active
+      ? 'status-tab flex-1 min-h-[44px] py-1.5 rounded-lg text-xs font-semibold text-center transition bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm'
+      : 'status-tab flex-1 min-h-[44px] py-1.5 rounded-lg text-xs font-semibold text-center transition text-slate-600 dark:text-slate-400 hover:text-slate-900';
+  });
+}
+
+const taskSearchInput = document.getElementById('taskSearch');
+const taskSortSelect = document.getElementById('taskSort');
+const btnClearSearch = document.getElementById('btnClearSearch');
+
+taskSearchInput.addEventListener('input', (event) => {
+  state.searchQuery = event.target.value;
+  btnClearSearch.classList.toggle('hidden', !state.searchQuery);
+  renderTasks();
+});
+
+taskSortSelect.addEventListener('change', (event) => {
+  state.sortMode = ALLOWED_SORTS.has(event.target.value) ? event.target.value : 'due-asc';
+  persistFilterState();
+  renderTasks();
+});
+
+btnClearSearch.addEventListener('click', () => {
+  state.searchQuery = '';
+  taskSearchInput.value = '';
+  btnClearSearch.classList.add('hidden');
+  taskSearchInput.focus();
+  renderTasks();
+});
+
+/* ==============================================================================
    TASK CARD RENDERING
    ============================================================================== */
 function subjectById(id) { return state.subjects.find(s => s.id === id); }
@@ -788,6 +1168,7 @@ function toggleCompleted(taskId) {
   const done = JSON.parse(localStorage.getItem('cht_completed') || '{}');
   done[taskId] = !done[taskId];
   localStorage.setItem('cht_completed', JSON.stringify(done));
+  haptic(10);
   updateTabCounts();
 }
 
@@ -810,7 +1191,7 @@ function createTaskCard(task) {
   const done = isCompleted(task.id);
   const d = daysUntil(task.due_date);
   const card = document.createElement('article');
-  card.className = `task-card bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-md min-w-0 ${done ? 'is-completed' : ''}`;
+  card.className = `task-card bg-white/95 dark:bg-slate-900/95 rounded-3xl border border-slate-200 dark:border-slate-800 p-4 min-w-0 ${done ? 'is-completed' : ''}`;
 
   const top = document.createElement('div');
   top.className = 'flex items-start justify-between gap-2 mb-2';
@@ -824,7 +1205,7 @@ function createTaskCard(task) {
   const doneButton = document.createElement('button');
   doneButton.type = 'button';
   doneButton.setAttribute('aria-label', done ? 'ทำเครื่องหมายว่ายังไม่เสร็จ' : 'ทำเครื่องหมายว่าเสร็จแล้ว');
-  doneButton.className = `shrink-0 w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all duration-200 active:scale-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600 hover:border-emerald-400'}`;
+  doneButton.className = `shrink-0 w-11 h-11 rounded-full border-2 flex items-center justify-center transition-all duration-200 active:scale-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600 hover:border-emerald-400'}`;
   if (done) {
     const icon = document.createElement('i');
     icon.dataset.lucide = 'check';
@@ -841,14 +1222,60 @@ function createTaskCard(task) {
   card.appendChild(top);
 
   const title = document.createElement('h3');
-  title.className = `font-display font-semibold text-sm mb-1 ${done ? 'line-through text-slate-400' : ''}`;
+  title.className = `font-display font-bold text-[15px] sm:text-base leading-snug mb-1.5 tracking-tight ${done ? 'line-through text-slate-400' : 'text-slate-800 dark:text-slate-100'}`;
   title.textContent = String(task.title || '');
   card.appendChild(title);
 
-  const desc = document.createElement('div');
-  desc.className = 'text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-2 break-words whitespace-pre-wrap';
-  appendLinkifiedText(desc, task.description || '');
-  card.appendChild(desc);
+  const descriptionText = String(task.description || '');
+  if (descriptionText) {
+    const descWrap = document.createElement('div');
+    descWrap.className = 'mb-2';
+
+    const descShell = document.createElement('div');
+    descShell.className = 'task-description-shell';
+    descShell.setAttribute('aria-live', 'polite');
+
+    const desc = document.createElement('div');
+    desc.className = 'text-xs sm:text-[13px] text-slate-500 dark:text-slate-400 leading-relaxed break-words whitespace-pre-wrap';
+    appendLinkifiedText(desc, descriptionText);
+    descShell.appendChild(desc);
+    descWrap.appendChild(descShell);
+
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'task-description-toggle hidden';
+    toggle.textContent = 'ดูเพิ่มเติม...';
+    toggle.setAttribute('aria-expanded', 'false');
+    descWrap.appendChild(toggle);
+
+    let expanded = false;
+    const collapsedHeight = () => parseFloat(getComputedStyle(document.documentElement).fontSize || '16') * 3.7;
+    const applyDescriptionState = (animate = true) => {
+      if (!animate) descShell.style.transition = 'none';
+      const fullHeight = desc.scrollHeight;
+      descShell.style.maxHeight = expanded ? `${fullHeight}px` : `${collapsedHeight()}px`;
+      descShell.classList.toggle('is-expanded', expanded);
+      toggle.textContent = expanded ? 'ย่อกลับ' : 'ดูเพิ่มเติม...';
+      toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      if (!animate) requestAnimationFrame(() => { descShell.style.transition = ''; });
+    };
+
+    toggle.addEventListener('click', () => {
+      expanded = !expanded;
+      applyDescriptionState(true);
+    });
+
+    card.appendChild(descWrap);
+    requestAnimationFrame(() => {
+      const needsCollapse = descriptionText.length > 180 || desc.scrollHeight > collapsedHeight() + 2;
+      if (needsCollapse) {
+        toggle.classList.remove('hidden');
+        applyDescriptionState(false);
+      } else {
+        descShell.style.maxHeight = `${desc.scrollHeight}px`;
+      }
+    });
+  }
 
   const images = Array.isArray(task.images) ? task.images : [];
   const validImages = images.slice(0, 3).map((img, index) => ({ url: safeUrl(img?.url || img), index })).filter(item => item.url);
@@ -868,7 +1295,7 @@ function createTaskCard(task) {
   }
 
   const footer = document.createElement('div');
-  footer.className = 'flex items-center justify-between mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/60';
+  footer.className = 'flex items-center justify-between mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/70';
 
   if (d !== null) {
     let cls = 'bg-slate-100 dark:bg-slate-800 text-slate-500';
@@ -881,33 +1308,45 @@ function createTaskCard(task) {
     footer.appendChild(document.createElement('span'));
   }
 
-  if (state.isRep) {
-    const actions = document.createElement('div');
-    actions.className = 'flex gap-1.5';
+  const actions = document.createElement('div');
+  actions.className = 'flex gap-1.5 shrink-0';
 
+  const share = document.createElement('button');
+  share.type = 'button';
+  share.className = 'card-action-button rounded-xl bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 flex items-center justify-center transition hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500';
+  share.setAttribute('aria-label', 'คัดลอกรายละเอียดการบ้าน');
+  share.title = 'คัดลอกรายละเอียดการบ้าน';
+  const shareIcon = document.createElement('i');
+  shareIcon.dataset.lucide = 'copy';
+  shareIcon.className = 'w-4 h-4';
+  share.appendChild(shareIcon);
+  share.addEventListener('click', () => shareOrCopyTask(task));
+  actions.appendChild(share);
+
+  if (state.isRep) {
     const edit = document.createElement('button');
     edit.type = 'button';
-    edit.className = 'w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center transition hover:scale-105 active:scale-95';
+    edit.className = 'card-action-button rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center transition hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500';
     edit.setAttribute('aria-label', 'แก้ไขการบ้าน');
     const editIcon = document.createElement('i');
     editIcon.dataset.lucide = 'pencil';
-    editIcon.className = 'w-3.5 h-3.5';
+    editIcon.className = 'w-4 h-4';
     edit.appendChild(editIcon);
     edit.addEventListener('click', () => openTaskModal(task));
 
     const del = document.createElement('button');
     del.type = 'button';
-    del.className = 'w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center transition hover:scale-105 active:scale-95';
+    del.className = 'card-action-button rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center transition hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500';
     del.setAttribute('aria-label', 'ลบการบ้าน');
     const delIcon = document.createElement('i');
     delIcon.dataset.lucide = 'trash-2';
-    delIcon.className = 'w-3.5 h-3.5';
+    delIcon.className = 'w-4 h-4';
     del.appendChild(delIcon);
     del.addEventListener('click', () => deleteTask(task.id));
 
     actions.append(edit, del);
-    footer.appendChild(actions);
   }
+  footer.appendChild(actions);
 
   card.appendChild(footer);
   return card;
@@ -915,16 +1354,21 @@ function createTaskCard(task) {
 
 function renderTasks() {
   updateTabCounts();
-  let list = state.tasks;
+  updateSummaryStats();
+  let list = [...state.tasks];
 
   if (state.activeSubjectFilter !== null) {
     list = list.filter(task => String(task.subject_id) === String(state.activeSubjectFilter));
   }
   if (state.statusFilter === 'PENDING') list = list.filter(task => !isCompleted(task.id));
   else if (state.statusFilter === 'COMPLETED') list = list.filter(task => isCompleted(task.id));
+  if (state.searchQuery.trim()) list = list.filter(task => taskMatchesSearch(task, state.searchQuery));
+  list = sortTasks(list);
 
   const container = document.getElementById('taskList');
   const empty = document.getElementById('emptyState');
+  const visibleCount = document.getElementById('visibleTaskCount');
+  if (visibleCount) visibleCount.textContent = `${list.length} รายการ`;
   clearElement(container);
 
   if (list.length === 0) {
@@ -1163,7 +1607,7 @@ function renderTaskImagePreview() {
 
     const remove = document.createElement('button');
     remove.type = 'button';
-    remove.className = 'absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-600 text-white text-[10px] flex items-center justify-center active:scale-90';
+    remove.className = 'absolute -top-2 -right-2 w-11 h-11 translate-x-1/3 -translate-y-1/3 rounded-full bg-rose-600 text-white text-[10px] flex items-center justify-center active:scale-90';
     remove.setAttribute('aria-label', 'ลบภาพ');
     remove.textContent = '✕';
     remove.addEventListener('click', () => {
@@ -1196,7 +1640,7 @@ function renderTaskAttachmentList() {
 
     const remove = document.createElement('button');
     remove.type = 'button';
-    remove.className = 'text-rose-600 font-bold shrink-0 active:scale-90';
+    remove.className = 'w-11 h-11 text-rose-600 font-bold shrink-0 flex items-center justify-center rounded-xl active:scale-90';
     remove.setAttribute('aria-label', 'ลบไฟล์แนบ');
     remove.textContent = '✕';
     remove.addEventListener('click', () => {
@@ -1277,12 +1721,12 @@ document.getElementById('taskForm').addEventListener('submit', async (e) => {
   toast('บันทึกการบ้านเรียบร้อย');
 });
 
-document.getElementById('fabPlus').addEventListener('click', () => openTaskModal(null));
+document.getElementById('fabPlus').addEventListener('click', () => { haptic(10); openTaskModal(null); });
 
 /* ==============================================================================
    AI CAMERA SNAP & AUTO-FILL
    ============================================================================== */
-document.getElementById('fabCamera').addEventListener('click', () => document.getElementById('cameraInput').click());
+document.getElementById('fabCamera').addEventListener('click', () => { haptic(10); document.getElementById('cameraInput').click(); });
 
 document.getElementById('cameraInput').addEventListener('change', async (e) => {
   const file = e.target.files[0];
@@ -1350,6 +1794,7 @@ document.getElementById('btnAiUseData').addEventListener('click', () => {
    INIT
    ============================================================================== */
 async function init() {
+  syncFilterControls();
   lucide.createIcons();
   const restored = await restoreRoom();
   if (!restored) openModal('pickerOverlay');
