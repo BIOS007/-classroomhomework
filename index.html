@@ -46,26 +46,60 @@
 
   @keyframes modalIn { from { opacity:0; transform: translateY(20px) scale(.98);} to { opacity:1; transform: translateY(0) scale(1);} }
   .modal-panel { animation: modalIn .2s ease-out; }
-
   @keyframes fabPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(124,58,237,.35);} 50% { box-shadow: 0 0 0 8px rgba(124,58,237,0);} }
   .fab-pulse { animation: fabPulse 2.4s ease-in-out infinite; }
+  @keyframes taskFadeIn { from { opacity:0; transform:translateY(5px);} to {opacity:1; transform:translateY(0);} }
+  @keyframes checkPop { 0% {transform:scale(.35);opacity:0;} 70% {transform:scale(1.18);opacity:1;} 100% {transform:scale(1);opacity:1;} }
 
   .safe-top { padding-top: env(safe-area-inset-top, 0px); }
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .drag-indicator { width:36px; height:4px; border-radius:999px; background:rgba(148,163,184,.4); margin:6px auto 2px; }
 
-  .drag-indicator { width: 36px; height: 4px; border-radius: 999px; background: rgba(148,163,184,.4); margin: 6px auto 2px; }
+  .task-card {
+    animation: taskFadeIn .24s ease-out both;
+    transition: transform .2s ease, box-shadow .2s ease, opacity .2s ease, border-color .2s ease;
+  }
+  .task-card:hover { transform:translateY(-2px); box-shadow:0 10px 30px rgba(15,23,42,.08); }
+  .dark .task-card:hover { box-shadow:0 12px 34px rgba(0,0,0,.25); }
+  .task-card.is-completed { opacity:.58; }
+  .task-check-icon { animation:checkPop .24s ease-out; }
 
-  .task-card { transition: transform .15s ease, box-shadow .15s ease; }
-  .task-card:hover { transform: translateY(-2px); }
+  .subject-chip { transition:transform .2s ease, box-shadow .2s ease, background-color .2s ease, color .2s ease, border-color .2s ease; }
+  .subject-chip:hover { transform:translateY(-1px); }
+  .subject-chip.is-active { box-shadow:0 0 0 3px rgba(47,143,255,.12), 0 8px 22px rgba(47,143,255,.18); }
 
-  .lockout-shake { animation: shake .4s; }
+  .workload-bar {
+    height:0;
+    transition:height .7s cubic-bezier(.4,0,.2,1), filter .2s ease, transform .2s ease;
+    transform-origin:bottom;
+  }
+  .workload-bar-wrap:hover .workload-bar,
+  .workload-bar-wrap:focus-visible .workload-bar { filter:brightness(1.05); transform:scaleX(1.04); }
+  .workload-tooltip {
+    pointer-events:none;
+    opacity:0;
+    transform:translate(-50%,6px);
+    transition:opacity .15s ease, transform .15s ease;
+  }
+  .workload-bar-wrap:hover .workload-tooltip,
+  .workload-bar-wrap:focus-visible .workload-tooltip { opacity:1; transform:translate(-50%,0); }
+
+  .lockout-shake { animation:shake .4s; }
   @keyframes shake { 10%,90%{transform:translateX(-1px)} 20%,80%{transform:translateX(2px)} 30%,50%,70%{transform:translateX(-4px)} 40%,60%{transform:translateX(4px)} }
 
-  a.linkified { color: #1a6ff5; text-decoration: underline; text-underline-offset: 2px; word-break: break-all; font-weight: 600; }
-  .dark a.linkified { color: #8ecdff; }
+  a.linkified { color:#1a6ff5; text-decoration:underline; text-underline-offset:2px; word-break:break-all; font-weight:600; }
+  .dark a.linkified { color:#8ecdff; }
+  .hide-scrollbar::-webkit-scrollbar { display:none; }
+  .hide-scrollbar { -ms-overflow-style:none; scrollbar-width:none; }
 
-  .hide-scrollbar::-webkit-scrollbar { display: none; }
-  .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      scroll-behavior:auto !important;
+      animation-duration:.001ms !important;
+      animation-iteration-count:1 !important;
+      transition-duration:.001ms !important;
+    }
+  }
 </style>
 </head>
 
@@ -74,7 +108,7 @@
 <div>
   <!-- ============================= TOP NAV ============================= -->
   <header class="safe-top sticky top-0 z-30 backdrop-blur-md bg-white/90 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800">
-    <div class="max-w-5xl mx-auto px-3.5 py-2.5 flex items-center justify-between gap-2">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-2">
       <div class="flex items-center gap-2 min-w-0 flex-1 cursor-pointer" id="btnChangeRoom">
         <div class="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shrink-0 shadow-sm">
           <i data-lucide="graduation-cap" class="w-5 h-5"></i>
@@ -105,7 +139,7 @@
     </div>
   </header>
 
-  <main class="max-w-5xl mx-auto px-3.5 pb-28 w-full min-w-0">
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 pb-28 w-full min-w-0">
 
     <!-- Workload analytics -->
     <section class="mt-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 shadow-sm overflow-hidden">
@@ -117,9 +151,7 @@
           ⚠️ สัปดาห์นี้งานเยอะ
         </span>
       </div>
-      <div class="w-full relative h-28">
-        <canvas id="workloadChart" class="w-full h-full block"></canvas>
-      </div>
+      <div id="workloadChart" class="w-full relative h-32 grid grid-cols-7 gap-2 sm:gap-3 items-end pt-7" aria-label="กราฟภาระงานรายสัปดาห์"></div>
     </section>
 
     <!-- STATUS FILTER TABS (งานทั้งหมด / ยังไม่เสร็จ / เสร็จแล้ว) -->
@@ -139,7 +171,7 @@
     <section class="mt-2.5 flex items-center gap-1.5 overflow-x-auto hide-scrollbar py-1 w-full min-w-0" id="subjectChips"></section>
 
     <!-- Task list -->
-    <section id="taskList" class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full"></section>
+    <section id="taskList" class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 w-full"></section>
 
     <div id="emptyState" class="hidden text-center py-12 text-slate-400">
       <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2 text-slate-300 dark:text-slate-700"></i>
@@ -150,10 +182,10 @@
 
 <!-- ============================= FABs (Representative mode only) ============================= -->
 <div id="fabWrap" class="hidden fixed bottom-6 right-4 z-40 flex flex-col items-end gap-2.5 safe-bottom">
-  <button id="fabCamera" title="AI สแกนการบ้าน" class="fab-pulse w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-600/30 flex items-center justify-center transition active:scale-95">
+  <button id="fabCamera" title="AI สแกนการบ้าน" class="fab-pulse w-[52px] h-[52px] sm:w-14 sm:h-14 rounded-full bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-600/30 flex items-center justify-center transition-transform duration-200 hover:scale-105 active:scale-95">
     <i data-lucide="camera" class="w-6 h-6"></i>
   </button>
-  <button id="fabPlus" title="เพิ่มการบ้านใหม่" class="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-brand-600 hover:bg-brand-700 text-white shadow-lg shadow-brand-600/30 flex items-center justify-center transition active:scale-95">
+  <button id="fabPlus" title="เพิ่มการบ้านใหม่" class="w-[52px] h-[52px] sm:w-14 sm:h-14 rounded-full bg-brand-600 hover:bg-brand-700 text-white shadow-lg shadow-brand-600/30 flex items-center justify-center transition-transform duration-200 hover:scale-105 active:scale-95">
     <i data-lucide="plus" class="w-6 h-6"></i>
   </button>
   <input id="cameraInput" type="file" accept="image/*" capture="environment" class="hidden">
@@ -358,15 +390,46 @@ function esc(str) {
     .replaceAll("'", '&#039;');
 }
 
-function linkifyText(text) {
-  const escaped = esc(text || '');
-  const urlPattern = /((https?:\/\/)[^\s<]+)/gi;
-  return escaped.replace(urlPattern, (match) => {
-    const clean = safeUrl(match.replace(/[),.;]+$/, ''));
-    if (!clean) return match;
-    const trailing = match.slice(clean.length);
-    return `<a href="${esc(clean)}" target="_blank" rel="noopener noreferrer" class="linkified">${clean}</a>${esc(trailing)}`;
-  }).replaceAll('\n', '<br>');
+function clearElement(element) {
+  while (element.firstChild) element.removeChild(element.firstChild);
+}
+
+function appendLinkifiedText(container, text) {
+  clearElement(container);
+  const source = String(text || '');
+  const urlPattern = /https?:\/\/[^\s]+/gi;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = urlPattern.exec(source)) !== null) {
+    if (match.index > lastIndex) {
+      container.appendChild(document.createTextNode(source.slice(lastIndex, match.index)));
+    }
+
+    const raw = match[0];
+    const cleanCandidate = raw.replace(/[),.;]+$/, '');
+    const trailing = raw.slice(cleanCandidate.length);
+    const clean = safeUrl(cleanCandidate);
+
+    if (clean) {
+      const anchor = document.createElement('a');
+      anchor.href = clean;
+      anchor.target = '_blank';
+      anchor.rel = 'noopener noreferrer';
+      anchor.className = 'linkified';
+      anchor.textContent = clean;
+      container.appendChild(anchor);
+    } else {
+      container.appendChild(document.createTextNode(cleanCandidate));
+    }
+
+    if (trailing) container.appendChild(document.createTextNode(trailing));
+    lastIndex = match.index + raw.length;
+  }
+
+  if (lastIndex < source.length) {
+    container.appendChild(document.createTextNode(source.slice(lastIndex)));
+  }
 }
 
 /* ==============================================================================
@@ -507,13 +570,13 @@ document.getElementById('btnDarkToggle').addEventListener('click', () => {
 function populatePicker() {
   const gradeSel = document.getElementById('pickGrade');
   const roomSel = document.getElementById('pickRoom');
-  gradeSel.innerHTML = '';
+  clearElement(gradeSel);
   for (let g = 1; g <= 6; g++) {
     const opt = document.createElement('option');
     opt.value = g; opt.textContent = `มัธยมศึกษาปีที่ ${g} (ม.${g})`;
     gradeSel.appendChild(opt);
   }
-  roomSel.innerHTML = '';
+  clearElement(roomSel);
   for (let r = 1; r <= 12; r++) {
     const opt = document.createElement('option');
     opt.value = r; opt.textContent = `ห้อง ${r}`;
@@ -654,36 +717,61 @@ function updateTabCounts() {
 /* ==============================================================================
    SUBJECT BADGE & CHIPS
    ============================================================================== */
-function subjectBadgeHtml(subject) {
+function createSubjectBadge(subject) {
+  const badge = document.createElement('span');
+  badge.className = 'px-2 py-0.5 rounded-full text-[10px] whitespace-nowrap truncate max-w-[160px]';
+
   if (!subject) {
-    return `<span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-medium">วิชาทั่วไป</span>`;
+    badge.classList.add('bg-slate-100', 'dark:bg-slate-800', 'text-slate-500', 'font-medium');
+    badge.textContent = 'วิชาทั่วไป';
+    return badge;
   }
-  const name = subject.subject_name || '';
-  const code = subject.subject_code || '';
-  const primary = name || code || 'วิชาทั่วไป';
-  const codeSub = name && code ? `<span class="opacity-70 font-normal">[${esc(code)}]</span> ` : '';
-  return `<span class="px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 text-[10px] font-semibold whitespace-nowrap truncate max-w-[140px]">
-      ${codeSub}${esc(primary)}
-    </span>`;
+
+  badge.classList.add('bg-brand-50', 'dark:bg-brand-900/40', 'text-brand-700', 'dark:text-brand-300', 'font-semibold');
+  const name = String(subject.subject_name || '');
+  const code = String(subject.subject_code || '');
+
+  if (name && code) {
+    const codeSpan = document.createElement('span');
+    codeSpan.className = 'opacity-70 font-normal';
+    codeSpan.textContent = `[${code}] `;
+    badge.appendChild(codeSpan);
+  }
+  badge.appendChild(document.createTextNode(name || code || 'วิชาทั่วไป'));
+  return badge;
+}
+
+function createSubjectChip(label, filterValue, active) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.dataset.filter = filterValue;
+  button.className = 'subject-chip chip px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 border focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500';
+
+  if (active) {
+    button.classList.add('is-active', 'bg-brand-600', 'border-brand-600', 'text-white');
+  } else {
+    button.classList.add('bg-white', 'dark:bg-slate-900', 'border-slate-200', 'dark:border-slate-800', 'text-slate-600', 'dark:text-slate-300', 'hover:border-brand-300', 'dark:hover:border-brand-700');
+  }
+
+  button.textContent = label;
+  button.addEventListener('click', () => {
+    state.activeSubjectFilter = filterValue === '__all' ? null : filterValue;
+    renderSubjectChips();
+    renderTasks();
+    lucide.createIcons();
+  });
+  return button;
 }
 
 function renderSubjectChips() {
   const wrap = document.getElementById('subjectChips');
-  const chips = [`<button data-filter="__all" class="chip px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap shrink-0 ${state.activeSubjectFilter === null ? 'bg-brand-600 text-white' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'}">ทั้งหมด</button>`];
-  state.subjects.forEach(s => {
-    const active = state.activeSubjectFilter === s.id;
-    chips.push(`<button data-filter="${esc(s.id)}" class="chip px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap shrink-0 ${active ? 'bg-brand-600 text-white' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'}">
-        📘 ${esc(s.subject_name || s.subject_code || '')}
-      </button>`);
-  });
-  wrap.innerHTML = chips.join('');
-  wrap.querySelectorAll('button[data-filter]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      state.activeSubjectFilter = btn.dataset.filter === '__all' ? null : btn.dataset.filter;
-      renderSubjectChips();
-      renderTasks();
-      lucide.createIcons();
-    });
+  clearElement(wrap);
+  wrap.appendChild(createSubjectChip('ทั้งหมด', '__all', state.activeSubjectFilter === null));
+
+  state.subjects.forEach(subject => {
+    const id = String(subject.id);
+    const label = `📘 ${subject.subject_name || subject.subject_code || ''}`;
+    wrap.appendChild(createSubjectChip(label, id, state.activeSubjectFilter === id));
   });
 }
 
@@ -710,89 +798,148 @@ function daysUntil(dateStr) {
   return Math.round((due - now) / (1000 * 60 * 60 * 24));
 }
 
+function createBadge(text, className) {
+  const span = document.createElement('span');
+  span.className = className;
+  span.textContent = text;
+  return span;
+}
+
+function createTaskCard(task) {
+  const subject = task.subjects || subjectById(task.subject_id);
+  const done = isCompleted(task.id);
+  const d = daysUntil(task.due_date);
+  const card = document.createElement('article');
+  card.className = `task-card bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-md min-w-0 ${done ? 'is-completed' : ''}`;
+
+  const top = document.createElement('div');
+  top.className = 'flex items-start justify-between gap-2 mb-2';
+
+  const badges = document.createElement('div');
+  badges.className = 'flex flex-wrap items-center gap-1.5 min-w-0 flex-1';
+  badges.appendChild(createSubjectBadge(subject));
+  badges.appendChild(createBadge(task.task_type === 'GROUP' ? 'งานกลุ่ม' : 'งานเดี่ยว', 'px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300'));
+  badges.appendChild(createBadge(`~${Number(task.estimated_minutes) || 20} น.`, 'px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300'));
+
+  const doneButton = document.createElement('button');
+  doneButton.type = 'button';
+  doneButton.setAttribute('aria-label', done ? 'ทำเครื่องหมายว่ายังไม่เสร็จ' : 'ทำเครื่องหมายว่าเสร็จแล้ว');
+  doneButton.className = `shrink-0 w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all duration-200 active:scale-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600 hover:border-emerald-400'}`;
+  if (done) {
+    const icon = document.createElement('i');
+    icon.dataset.lucide = 'check';
+    icon.className = 'task-check-icon w-4 h-4';
+    doneButton.appendChild(icon);
+  }
+  doneButton.addEventListener('click', () => {
+    toggleCompleted(task.id);
+    renderTasks();
+    lucide.createIcons();
+  });
+
+  top.append(badges, doneButton);
+  card.appendChild(top);
+
+  const title = document.createElement('h3');
+  title.className = `font-display font-semibold text-sm mb-1 ${done ? 'line-through text-slate-400' : ''}`;
+  title.textContent = String(task.title || '');
+  card.appendChild(title);
+
+  const desc = document.createElement('div');
+  desc.className = 'text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-2 break-words whitespace-pre-wrap';
+  appendLinkifiedText(desc, task.description || '');
+  card.appendChild(desc);
+
+  const images = Array.isArray(task.images) ? task.images : [];
+  const validImages = images.slice(0, 3).map((img, index) => ({ url: safeUrl(img?.url || img), index })).filter(item => item.url);
+  if (validImages.length) {
+    const thumbs = document.createElement('div');
+    thumbs.className = 'flex gap-1.5 mb-2';
+    validImages.forEach(item => {
+      const img = document.createElement('img');
+      img.src = item.url;
+      img.alt = 'ภาพประกอบการบ้าน';
+      img.loading = 'lazy';
+      img.className = 'task-thumb w-12 h-12 sm:w-14 sm:h-14 object-cover rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer transition-transform duration-200 hover:scale-105';
+      img.addEventListener('click', () => openLightbox(images.map(value => value?.url || value), item.index));
+      thumbs.appendChild(img);
+    });
+    card.appendChild(thumbs);
+  }
+
+  const footer = document.createElement('div');
+  footer.className = 'flex items-center justify-between mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/60';
+
+  if (d !== null) {
+    let cls = 'bg-slate-100 dark:bg-slate-800 text-slate-500';
+    let label = `เหลืออีก ${d} วัน`;
+    if (d < 0) { cls = 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'; label = 'เลยกำหนดส่ง'; }
+    else if (d === 0) { cls = 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'; label = 'ส่งวันนี้'; }
+    else if (d <= 2) { cls = 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'; }
+    footer.appendChild(createBadge(label, `px-2 py-0.5 rounded-full text-[10px] font-semibold ${cls}`));
+  } else {
+    footer.appendChild(document.createElement('span'));
+  }
+
+  if (state.isRep) {
+    const actions = document.createElement('div');
+    actions.className = 'flex gap-1.5';
+
+    const edit = document.createElement('button');
+    edit.type = 'button';
+    edit.className = 'w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center transition hover:scale-105 active:scale-95';
+    edit.setAttribute('aria-label', 'แก้ไขการบ้าน');
+    const editIcon = document.createElement('i');
+    editIcon.dataset.lucide = 'pencil';
+    editIcon.className = 'w-3.5 h-3.5';
+    edit.appendChild(editIcon);
+    edit.addEventListener('click', () => openTaskModal(task));
+
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center transition hover:scale-105 active:scale-95';
+    del.setAttribute('aria-label', 'ลบการบ้าน');
+    const delIcon = document.createElement('i');
+    delIcon.dataset.lucide = 'trash-2';
+    delIcon.className = 'w-3.5 h-3.5';
+    del.appendChild(delIcon);
+    del.addEventListener('click', () => deleteTask(task.id));
+
+    actions.append(edit, del);
+    footer.appendChild(actions);
+  }
+
+  card.appendChild(footer);
+  return card;
+}
+
 function renderTasks() {
   updateTabCounts();
-
   let list = state.tasks;
+
   if (state.activeSubjectFilter !== null) {
-    list = list.filter(t => t.subject_id === state.activeSubjectFilter);
+    list = list.filter(task => String(task.subject_id) === String(state.activeSubjectFilter));
   }
-  if (state.statusFilter === 'PENDING') {
-    list = list.filter(t => !isCompleted(t.id));
-  } else if (state.statusFilter === 'COMPLETED') {
-    list = list.filter(t => isCompleted(t.id));
-  }
+  if (state.statusFilter === 'PENDING') list = list.filter(task => !isCompleted(task.id));
+  else if (state.statusFilter === 'COMPLETED') list = list.filter(task => isCompleted(task.id));
 
   const container = document.getElementById('taskList');
   const empty = document.getElementById('emptyState');
+  clearElement(container);
+
   if (list.length === 0) {
-    container.innerHTML = '';
     empty.classList.remove('hidden');
     return;
   }
+
   empty.classList.add('hidden');
-
-  container.innerHTML = list.map(task => {
-    const subject = task.subjects || subjectById(task.subject_id);
-    const done = isCompleted(task.id);
-    const d = daysUntil(task.due_date);
-    let dueBadge = '';
-    if (d !== null) {
-      let cls = 'bg-slate-100 dark:bg-slate-800 text-slate-500';
-      let label = `เหลืออีก ${d} วัน`;
-      if (d < 0) { cls = 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'; label = 'เลยกำหนดส่ง'; }
-      else if (d === 0) { cls = 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'; label = 'ส่งวันนี้'; }
-      else if (d <= 2) { cls = 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'; }
-      dueBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${cls}">${label}</span>`;
-    }
-
-    const images = Array.isArray(task.images) ? task.images : [];
-    const thumbs = images.slice(0, 3).map((img, i) => {
-      const u = safeUrl(img.url || img);
-      if (!u) return '';
-      return `<img src="${esc(u)}" data-task="${esc(task.id)}" data-idx="${i}" class="task-thumb w-12 h-12 sm:w-14 sm:h-14 object-cover rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer">`;
-    }).join('');
-
-    return `
-    <div class="task-card bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 shadow-sm min-w-0 ${done ? 'opacity-55' : ''}">
-      <div class="flex items-start justify-between gap-2 mb-2">
-        <div class="flex flex-wrap items-center gap-1.5 min-w-0 flex-1">
-          ${subjectBadgeHtml(subject)}
-          <span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300">${task.task_type === 'GROUP' ? 'งานกลุ่ม' : 'งานเดี่ยว'}</span>
-          <span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300">~${esc(task.estimated_minutes || 20)} น.</span>
-        </div>
-        <button data-toggle-done="${esc(task.id)}" class="shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition ${done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600'}">
-          ${done ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : ''}
-        </button>
-      </div>
-      <h3 class="font-display font-semibold text-xs sm:text-sm mb-1 ${done ? 'line-through text-slate-400' : ''}">${esc(task.title)}</h3>
-      <div class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-2 break-words">${linkifyText(task.description || '')}</div>
-      ${thumbs ? `<div class="flex gap-1.5 mb-2">${thumbs}</div>` : ''}
-      <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/60">
-        ${dueBadge || '<span></span>'}
-        ${state.isRep ? `<div class="flex gap-1.5">
-          <button data-edit-task="${esc(task.id)}" class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
-          <button data-delete-task="${esc(task.id)}" class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-        </div>` : ''}
-      </div>
-    </div>`;
-  }).join('');
-
-  container.querySelectorAll('[data-toggle-done]').forEach(btn => {
-    btn.addEventListener('click', () => { toggleCompleted(btn.dataset.toggleDone); renderTasks(); lucide.createIcons(); });
+  const fragment = document.createDocumentFragment();
+  list.forEach((task, index) => {
+    const card = createTaskCard(task);
+    card.style.animationDelay = `${Math.min(index * 35, 210)}ms`;
+    fragment.appendChild(card);
   });
-  container.querySelectorAll('[data-edit-task]').forEach(btn => {
-    btn.addEventListener('click', () => openTaskModal(state.tasks.find(t => t.id === btn.dataset.editTask)));
-  });
-  container.querySelectorAll('[data-delete-task]').forEach(btn => {
-    btn.addEventListener('click', () => deleteTask(btn.dataset.deleteTask));
-  });
-  container.querySelectorAll('.task-thumb').forEach(img => {
-    img.addEventListener('click', () => {
-      const task = state.tasks.find(t => t.id === img.dataset.task);
-      openLightbox((task.images || []).map(i => i.url || i), parseInt(img.dataset.idx, 10));
-    });
-  });
+  container.appendChild(fragment);
   lucide.createIcons();
 }
 
@@ -828,88 +975,105 @@ document.getElementById('lightboxNext').addEventListener('click', () => {
 });
 
 /* ==============================================================================
-   WORKLOAD ANALYTICS (Bulletproof Canvas Bar Chart)
+   WORKLOAD ANALYTICS
    ============================================================================== */
-function drawBar(ctx, x, y, width, height, radius) {
-  if (height <= 0) return;
-  if (typeof ctx.roundRect === 'function') {
-    ctx.beginPath();
-    ctx.roundRect(x, y, width, height, [radius, radius, 0, 0]);
-    ctx.fill();
-  } else {
-    // Fallback สำหรับเบราว์เซอร์มือถือที่ไม่มี roundRect
-    ctx.fillRect(x, y, width, height);
-  }
-}
-
-function renderWorkloadChart() {
-  const canvas = document.getElementById('workloadChart');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  const width = rect.width || canvas.parentElement.clientWidth || 300;
-  const height = 110;
-
-  canvas.width = width * dpr;
-  canvas.height = height * dpr;
-  ctx.scale(dpr, dpr);
-  ctx.clearRect(0, 0, width, height);
-
-  const days = ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา'];
+function getWeeklyWorkload() {
   const totals = [0, 0, 0, 0, 0, 0, 0];
+  const taskCounts = [0, 0, 0, 0, 0, 0, 0];
   const today = new Date();
   const startOfWeek = new Date(today);
   const dow = (today.getDay() + 6) % 7;
   startOfWeek.setDate(today.getDate() - dow);
-  startOfWeek.setHours(0,0,0,0);
+  startOfWeek.setHours(0, 0, 0, 0);
 
-  state.tasks.forEach(t => {
-    if (!t.due_date) return;
-    const due = new Date(t.due_date);
-    const diff = Math.round((due - startOfWeek) / (1000 * 60 * 60 * 24));
-    if (diff >= 0 && diff < 7) totals[diff] += (t.estimated_minutes || 20);
+  state.tasks.forEach(task => {
+    if (!task.due_date) return;
+    const due = new Date(task.due_date);
+    if (Number.isNaN(due.getTime())) return;
+    const diff = Math.floor((due - startOfWeek) / (1000 * 60 * 60 * 24));
+    if (diff >= 0 && diff < 7) {
+      totals[diff] += Number(task.estimated_minutes) || 20;
+      taskCounts[diff] += 1;
+    }
   });
 
+  return { totals, taskCounts };
+}
+
+function renderWorkloadChart() {
+  const chart = document.getElementById('workloadChart');
+  if (!chart) return;
+
+  clearElement(chart);
+  const days = ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา'];
+  const fullDays = ['วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสบดี', 'วันศุกร์', 'วันเสาร์', 'วันอาทิตย์'];
+  const { totals, taskCounts } = getWeeklyWorkload();
   const max = Math.max(...totals, 30);
-  const barW = width / 7;
-  const isDark = document.documentElement.classList.contains('dark');
 
-  totals.forEach((val, i) => {
-    const h = (val / max) * 70;
-    const x = i * barW + barW * 0.2;
-    const barWidth = barW * 0.6;
-    ctx.fillStyle = val > 90 ? '#f59e0b' : (isDark ? '#59b0ff' : '#2f8fff');
-    drawBar(ctx, x, 85 - h, barWidth, h, 4);
+  totals.forEach((minutes, index) => {
+    const item = document.createElement('div');
+    item.className = 'workload-bar-wrap relative h-full min-w-0 flex flex-col items-center justify-end outline-none';
+    item.tabIndex = 0;
+    item.setAttribute('role', 'img');
+    item.setAttribute('aria-label', `${fullDays[index]} ${taskCounts[index]} งาน ประมาณ ${minutes} นาที`);
 
-    ctx.fillStyle = isDark ? '#94a3b8' : '#64748b';
-    ctx.font = '10px "Noto Sans Thai", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(days[i], x + barWidth / 2, 102);
+    const tooltip = document.createElement('div');
+    tooltip.className = 'workload-tooltip absolute z-10 left-1/2 -top-1 px-2.5 py-1.5 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-[10px] font-semibold whitespace-nowrap shadow-lg';
+    tooltip.textContent = `${fullDays[index]} • ${taskCounts[index]} งาน • ${minutes} นาที`;
+
+    const rail = document.createElement('div');
+    rail.className = 'w-full max-w-12 h-[84px] rounded-t-lg bg-slate-100 dark:bg-slate-800/80 flex items-end overflow-hidden';
+
+    const bar = document.createElement('div');
+    bar.className = `workload-bar w-full rounded-t-lg ${minutes > 90 ? 'bg-gradient-to-t from-amber-500 to-orange-300' : 'bg-gradient-to-t from-brand-600 to-cyan-300'}`;
+    const targetHeight = Math.max(minutes > 0 ? 8 : 0, (minutes / max) * 84);
+    rail.appendChild(bar);
+
+    const day = document.createElement('span');
+    day.className = 'mt-1.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400';
+    day.textContent = days[index];
+
+    item.append(tooltip, rail, day);
+    chart.appendChild(item);
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      bar.style.height = `${targetHeight}px`;
+    }));
   });
 
   const alertEl = document.getElementById('workloadAlert');
   if (alertEl) {
-    const heavyDays = totals.filter(v => v > 90).length;
+    const heavyDays = totals.filter(value => value > 90).length;
     alertEl.classList.toggle('hidden', heavyDays === 0);
   }
 }
-window.addEventListener('resize', () => renderWorkloadChart());
 
 /* ==============================================================================
    SUBJECT SELECTS
    ============================================================================== */
 function populateSubjectSelects() {
-  const options = state.subjects.map(s => {
-    const label = s.subject_name ? (s.subject_code ? `[${s.subject_code}] ${s.subject_name}` : s.subject_name) : (s.subject_code || 'ไม่มีชื่อวิชา');
-    return `<option value="${esc(s.id)}">${esc(label)}</option>`;
-  }).join('');
   ['taskSubject', 'aiSubject'].forEach(id => {
-    const sel = document.getElementById(id);
-    if (!sel) return;
-    const current = sel.value;
-    sel.innerHTML = `<option value="">-- ไม่ระบุวิชา --</option>` + options;
-    if (current) sel.value = current;
+    const select = document.getElementById(id);
+    if (!select) return;
+
+    const current = select.value;
+    clearElement(select);
+
+    const emptyOption = document.createElement('option');
+    emptyOption.value = '';
+    emptyOption.textContent = '-- ไม่ระบุวิชา --';
+    select.appendChild(emptyOption);
+
+    state.subjects.forEach(subject => {
+      const option = document.createElement('option');
+      option.value = String(subject.id);
+      option.textContent = subject.subject_name
+        ? (subject.subject_code ? `[${subject.subject_code}] ${subject.subject_name}` : subject.subject_name)
+        : (subject.subject_code || 'ไม่มีชื่อวิชา');
+      select.appendChild(option);
+    });
+
+    if (current) select.value = current;
   });
 }
 
@@ -955,8 +1119,8 @@ function compressImageToBase64(file, targetKB = 250, maxDim = 1600) {
 function resetTaskForm() {
   document.getElementById('taskForm').reset();
   document.getElementById('taskId').value = '';
-  document.getElementById('taskImagePreview').innerHTML = '';
-  document.getElementById('taskAttachmentList').innerHTML = '';
+  clearElement(document.getElementById('taskImagePreview'));
+  clearElement(document.getElementById('taskAttachmentList'));
   state.currentTaskImages = [];
   state.currentTaskAttachments = [];
   document.getElementById('taskModalTitle').textContent = 'เพิ่มการบ้าน';
@@ -983,35 +1147,67 @@ function openTaskModal(task) {
 
 function renderTaskImagePreview() {
   const wrap = document.getElementById('taskImagePreview');
-  wrap.innerHTML = state.currentTaskImages.map((img, i) => {
-    const u = safeUrl(img.url || img);
-    return `<div class="relative">
-      <img src="${esc(u)}" class="w-12 h-12 object-cover rounded-xl border border-slate-200 dark:border-slate-700">
-      <button data-remove-img="${i}" class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-600 text-white text-[10px] flex items-center justify-center">✕</button>
-    </div>`;
-  }).join('');
-  wrap.querySelectorAll('[data-remove-img]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      state.currentTaskImages.splice(parseInt(btn.dataset.removeImg, 10), 1);
+  clearElement(wrap);
+
+  state.currentTaskImages.forEach((image, index) => {
+    const url = safeUrl(image?.url || image);
+    if (!url) return;
+
+    const item = document.createElement('div');
+    item.className = 'relative';
+
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = 'ภาพตัวอย่าง';
+    img.className = 'w-12 h-12 object-cover rounded-xl border border-slate-200 dark:border-slate-700';
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-600 text-white text-[10px] flex items-center justify-center active:scale-90';
+    remove.setAttribute('aria-label', 'ลบภาพ');
+    remove.textContent = '✕';
+    remove.addEventListener('click', () => {
+      state.currentTaskImages.splice(index, 1);
       renderTaskImagePreview();
     });
+
+    item.append(img, remove);
+    wrap.appendChild(item);
   });
 }
 
 function renderTaskAttachmentList() {
   const wrap = document.getElementById('taskAttachmentList');
-  wrap.innerHTML = state.currentTaskAttachments.map((att, i) => `
-    <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
-      <span class="truncate flex items-center gap-1.5"><i data-lucide="paperclip" class="w-3.5 h-3.5"></i>${esc(att.name)}</span>
-      <button data-remove-att="${i}" class="text-rose-600 font-bold">✕</button>
-    </div>`).join('');
-  wrap.querySelectorAll('[data-remove-att]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      state.currentTaskAttachments.splice(parseInt(btn.dataset.removeAtt, 10), 1);
+  clearElement(wrap);
+
+  state.currentTaskAttachments.forEach((attachment, index) => {
+    const row = document.createElement('div');
+    row.className = 'flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700';
+
+    const label = document.createElement('span');
+    label.className = 'truncate flex items-center gap-1.5 min-w-0';
+    const icon = document.createElement('i');
+    icon.dataset.lucide = 'paperclip';
+    icon.className = 'w-3.5 h-3.5 shrink-0';
+    const name = document.createElement('span');
+    name.className = 'truncate';
+    name.textContent = String(attachment?.name || 'ไฟล์แนบ');
+    label.append(icon, name);
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'text-rose-600 font-bold shrink-0 active:scale-90';
+    remove.setAttribute('aria-label', 'ลบไฟล์แนบ');
+    remove.textContent = '✕';
+    remove.addEventListener('click', () => {
+      state.currentTaskAttachments.splice(index, 1);
       renderTaskAttachmentList();
-      lucide.createIcons();
     });
+
+    row.append(label, remove);
+    wrap.appendChild(row);
   });
+
   lucide.createIcons();
 }
 
@@ -1128,7 +1324,12 @@ document.getElementById('cameraInput').addEventListener('change', async (e) => {
     document.getElementById('aiTitle').value = result.title || '';
     document.getElementById('aiDesc').value = result.description || '';
   } catch (err) {
-    document.getElementById('aiReviewStatus').innerHTML = '<span class="text-rose-600 font-medium">AI วิเคราะห์รูปภาพไม่สำเร็จ กรุณากรอกเอง</span>';
+    const aiStatus = document.getElementById('aiReviewStatus');
+    clearElement(aiStatus);
+    const errorText = document.createElement('span');
+    errorText.className = 'text-rose-600 font-medium';
+    errorText.textContent = 'AI วิเคราะห์รูปภาพไม่สำเร็จ กรุณากรอกเอง';
+    aiStatus.appendChild(errorText);
     document.getElementById('aiReviewFields').classList.remove('hidden');
   }
 });
