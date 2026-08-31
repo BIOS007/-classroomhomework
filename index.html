@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="th" class="overflow-x-hidden">
+<html lang="th">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -45,31 +45,23 @@
   html {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
-    height: auto;
     min-height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
-    overscroll-behavior-y: contain;
     background: rgb(248 250 252);
   }
   html.dark { background: rgb(2 6 23); }
 
+  /* Root page scrolling: let the browser own the main scroll container. */
   html, body {
     font-family: 'Noto Sans Thai', 'Prompt', sans-serif;
-    overflow-x: hidden !important;
     width: 100%;
-    max-width: 100vw;
     min-height: 100%;
-    height: auto;
+    overflow-x: hidden;
     overflow-y: auto;
-    touch-action: pan-y;
-    overscroll-behavior-y: contain;
-    -webkit-overflow-scrolling: touch;
   }
 
   body {
+    margin: 0;
     min-height: 100dvh;
-    overflow-y: visible;
     padding-left: var(--safe-left);
     padding-right: var(--safe-right);
   }
@@ -258,7 +250,7 @@
 </style>
 </head>
 
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen overflow-x-hidden flex flex-col justify-between">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col justify-between">
 
 <div>
   <!-- ============================= TOP NAV ============================= -->
