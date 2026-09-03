@@ -498,7 +498,7 @@
       </button>
     </div>
     <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">กรอกรหัสผ่านเพื่อปลดล็อกสิทธิ์เพิ่ม/แก้ไขการบ้าน</p>
-    <input id="passcodeInput" type="password" inputmode="numeric" placeholder="รหัสผ่านห้อง"
+    <input id="passcodeInput" type="password" inputmode="text" autocomplete="current-password" autocapitalize="none" spellcheck="false" enterkeyhint="done" placeholder="รหัสผ่านห้อง"
       class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:ring-2 focus:ring-brand-500 tracking-widest text-center font-bold text-sm">
     <p id="passcodeStatus" class="text-xs text-rose-600 mt-2 min-h-[16px] text-center font-medium"></p>
     <button id="btnPasscodeSubmit" class="w-full mt-2 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold transition active:scale-95 text-sm">ยืนยันรหัสผ่าน</button>
@@ -543,7 +543,7 @@
         </div>
         <div>
           <label class="text-xs font-semibold text-slate-500">กำหนดส่ง</label>
-          <input id="taskDue" type="datetime-local" class="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs">
+          <input id="taskDue" type="datetime-local" required class="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs">
         </div>
       </div>
 
@@ -553,8 +553,8 @@
       </div>
 
       <div>
-        <label class="text-xs font-semibold text-slate-500">รูปภาพประกอบ</label>
-        <input id="taskImages" type="file" accept="image/png,image/jpeg,image/webp" multiple
+        <label class="text-xs font-semibold text-slate-500">รูปภาพประกอบ (สูงสุด 3 รูป)</label>
+        <input id="taskImages" type="file" accept="image/*" multiple
           class="w-full mt-1 text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-brand-100 file:text-brand-700 dark:file:bg-brand-900/40 dark:file:text-brand-300">
         <div id="taskImagePreview" class="flex gap-2 flex-wrap mt-2"></div>
       </div>
@@ -566,8 +566,8 @@
         <div id="taskAttachmentList" class="text-xs mt-1 space-y-1"></div>
       </div>
 
-      <button type="submit" class="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold flex items-center justify-center gap-2 shadow-sm transition active:scale-95 text-xs sm:text-sm">
-        <i data-lucide="save" class="w-4 h-4"></i> บันทึกข้อมูลการบ้าน
+      <button id="taskSubmit" type="submit" class="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 disabled:opacity-60 disabled:cursor-wait text-white font-semibold flex items-center justify-center gap-2 shadow-sm transition active:scale-95 text-xs sm:text-sm">
+        <i data-lucide="save" class="w-4 h-4"></i> <span id="taskSubmitLabel">บันทึกข้อมูลการบ้าน</span>
       </button>
     </form>
   </div>
@@ -646,6 +646,12 @@ const SUPABASE_URL = "https://jaqdgehwqqaowzrxabgg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphcWRnZWh3cXFhb3d6cnhhYmdnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5NzIzMTcsImV4cCI6MjEwMzU0ODMxN30.6xiNIP_mmqRWuudWzhSwNPYJoVRvudd-Djbs_lBi090";
 const GOOGLE_DRIVE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz7PfD1Wcal8Dx80Fj4D2cJbP56ez33nYi3j120mCiJ7DK7icg7yRwZZFU_pR8imSuDQQ/exec";
 const LINE_BOT_ID = "@515oqmpb";
+const STORAGE_BUCKET = "homework-images";
+const MAX_IMAGE_COUNT = 3;
+const MAX_SOURCE_IMAGE_BYTES = 12 * 1024 * 1024;
+const TARGET_IMAGE_BYTES = 500 * 1024;
+const MAX_IMAGE_DIMENSION = 1600;
+const APP_VERSION = "2026.09.03.1";
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -785,7 +791,8 @@ async function submitPasscode() {
     setAttempts(0);
     setLockoutUntil(0);
     state.isRep = true;
-    sessionStorage.setItem('cht_is_rep', '1');
+    state.repPasscode = val;
+    document.getElementById('passcodeInput').value = '';
     document.getElementById('fabWrap').classList.remove('hidden');
     closeModal('passcodeOverlay');
     renderTasks();
@@ -832,11 +839,13 @@ const state = {
   subjects: [],
   tasks: [],
   statusFilter: persistedFilters.statusFilter,
-  isRep: sessionStorage.getItem('cht_is_rep') === '1',
+  isRep: false,
+  repPasscode: '',
   activeSubjectFilter: persistedFilters.activeSubjectFilter,
   sortMode: persistedFilters.sortMode,
   searchQuery: '',
   currentTaskImages: [],
+  originalTaskImageFileIds: [],
   currentTaskAttachments: [],
   lightboxImages: [],
   lightboxIndex: 0,
@@ -948,7 +957,7 @@ document.getElementById('btnEnterRoom').addEventListener('click', async () => {
     state.room = roomRow;
     if (previousRoomId && previousRoomId !== roomRow?.id) {
       state.isRep = false;
-      sessionStorage.removeItem('cht_is_rep');
+      state.repPasscode = '';
       document.getElementById('fabWrap').classList.add('hidden');
     }
     localStorage.setItem('cht_room', JSON.stringify(roomRow));
@@ -981,7 +990,7 @@ async function restoreRoom() {
 document.getElementById('btnRepMode').addEventListener('click', () => {
   if (state.isRep) {
     state.isRep = false;
-    sessionStorage.removeItem('cht_is_rep');
+    state.repPasscode = '';
     document.getElementById('fabWrap').classList.add('hidden');
     renderTasks();
     toast('ออกจากโหมดตัวแทนห้องแล้ว');
@@ -1088,7 +1097,7 @@ async function loadSubjects() {
   if (!state.room) return;
   const { data, error } = await supabase
     .from('subjects')
-    .select('*')
+    .select('id, classroom_id, subject_code, subject_name, teacher_name, teacher_image_url, subject_icon_url')
     .eq('classroom_id', state.room.id)
     .order('subject_name', { ascending: true });
   if (error) throw error;
@@ -1099,7 +1108,7 @@ async function loadTasks() {
   if (!state.room) return;
   const { data, error } = await supabase
     .from('assignments')
-    .select('*, subjects(subject_code, subject_name)')
+    .select('id, classroom_id, subject_id, title, description, task_type, due_date, created_at, workload_minutes, images, attachments, subjects(subject_code, subject_name)')
     .eq('classroom_id', state.room.id)
     .order('due_date', { ascending: true });
   if (error) throw error;
@@ -1303,7 +1312,7 @@ function sortTasks(list) {
   } else if (state.sortMode === 'newest') {
     sorted.sort((a, b) => createdTimestamp(b) - createdTimestamp(a));
   } else if (state.sortMode === 'workload') {
-    sorted.sort((a, b) => (Number(b.estimated_minutes) || 20) - (Number(a.estimated_minutes) || 20));
+    sorted.sort((a, b) => (Number(b.workload_minutes) || 20) - (Number(a.workload_minutes) || 20));
   } else {
     sorted.sort((a, b) => dueTimestamp(a, Infinity) - dueTimestamp(b, Infinity));
   }
@@ -1319,7 +1328,7 @@ function formatTaskShareText(task) {
   return `📚 ${String(task.title || 'การบ้าน')}
 วิชา: ${subjectLabel}
 กำหนดส่ง: ${due}
-ภาระงาน: ~${Number(task.estimated_minutes) || 20} นาที
+ภาระงาน: ~${Number(task.workload_minutes) || 20} นาที
 
 ${description}
 
@@ -1451,7 +1460,7 @@ function createTaskCard(task) {
   badges.className = 'flex flex-wrap items-center gap-1.5 min-w-0 flex-1';
   badges.appendChild(createSubjectBadge(subject));
   badges.appendChild(createBadge(task.task_type === 'GROUP' ? 'งานกลุ่ม' : 'งานเดี่ยว', 'px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300'));
-  badges.appendChild(createBadge(`~${Number(task.estimated_minutes) || 20} น.`, 'px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300'));
+  badges.appendChild(createBadge(`~${Number(task.workload_minutes) || 20} น.`, 'px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300'));
 
   const doneButton = document.createElement('button');
   doneButton.type = 'button';
@@ -1488,6 +1497,7 @@ function createTaskCard(task) {
     mainImg.src = validImages[0].url;
     mainImg.alt = 'ภาพประกอบการบ้าน';
     mainImg.loading = 'lazy';
+    mainImg.decoding = 'async';
     mainImg.className = 'task-media-main border border-slate-200 dark:border-slate-700 cursor-pointer transition-transform duration-200 hover:scale-[1.01]';
     mainImg.addEventListener('click', () => openLightbox(images.map(value => value?.url || value), validImages[0].index));
     media.appendChild(mainImg);
@@ -1500,6 +1510,7 @@ function createTaskCard(task) {
         img.src = item.url;
         img.alt = 'ภาพประกอบการบ้าน';
         img.loading = 'lazy';
+        img.decoding = 'async';
         img.className = 'task-media-secondary border border-slate-200 dark:border-slate-700 cursor-pointer transition-transform duration-200 hover:scale-[1.01]';
         img.addEventListener('click', () => openLightbox(images.map(value => value?.url || value), item.index));
         grid.appendChild(img);
@@ -1721,7 +1732,9 @@ async function commitPendingDelete(id) {
     state.tasks.splice(insertAt, 0, pending.task);
     renderTasks();
     toast('ลบไม่สำเร็จ: ' + error.message, '', null, 4500);
+    return;
   }
+  await deleteHomeworkImages((pending.task.images || []).map(image => image?.fileId).filter(Boolean));
 }
 
 function deleteTask(id) {
@@ -1769,6 +1782,7 @@ function openTaskDetail(task) {
     media.className = 'mb-4';
     const main = document.createElement('img');
     main.src = images[0];
+    main.decoding = 'async';
     main.alt = 'ภาพประกอบการบ้าน';
     main.className = 'w-full max-h-[360px] aspect-video object-cover rounded-2xl border border-slate-200 dark:border-slate-700 cursor-pointer';
     main.addEventListener('click', () => openLightbox(images, 0));
@@ -1817,7 +1831,7 @@ function openTaskDetail(task) {
   const workItem = document.createElement('div');
   workItem.className = 'detail-meta-item';
   const workLabel = document.createElement('p'); workLabel.className = 'text-[10px] text-slate-400 font-semibold'; workLabel.textContent = 'ภาระงาน';
-  const workValue = document.createElement('p'); workValue.className = 'text-xs font-bold mt-1'; workValue.textContent = `ประมาณ ${Number(task.estimated_minutes) || 20} นาที`;
+  const workValue = document.createElement('p'); workValue.className = 'text-xs font-bold mt-1'; workValue.textContent = `ประมาณ ${Number(task.workload_minutes) || 20} นาที`;
   workItem.append(workLabel, workValue);
   meta.append(dueItem, workItem);
   content.appendChild(meta);
@@ -1914,7 +1928,7 @@ function getWeeklyWorkload() {
     if (Number.isNaN(due.getTime())) return;
     const diff = Math.floor((due - startOfWeek) / (1000 * 60 * 60 * 24));
     if (diff >= 0 && diff < 7) {
-      totals[diff] += Number(task.estimated_minutes) || 20;
+      totals[diff] += Number(task.workload_minutes) || 20;
       taskCounts[diff] += 1;
     }
   });
@@ -2000,50 +2014,161 @@ function populateSubjectSelects() {
 }
 
 /* ==============================================================================
-   IMAGE COMPRESSION (~250KB Base64)
+   IMAGE PIPELINE — iOS-safe compression + Google Drive upload
    ============================================================================== */
-function compressImageToBase64(file, targetKB = 250, maxDim = 1600) {
+function canvasToBlob(canvas, quality) {
   return new Promise((resolve, reject) => {
-    const img = new Image();
-    const reader = new FileReader();
-    reader.onload = (e) => { img.src = e.target.result; };
-    reader.onerror = reject;
-    img.onload = () => {
-      let { width, height } = img;
-      if (width > maxDim || height > maxDim) {
-        const scale = maxDim / Math.max(width, height);
-        width = Math.round(width * scale);
-        height = Math.round(height * scale);
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width; canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
-
-      let quality = 0.85;
-      let dataUrl = canvas.toDataURL('image/jpeg', quality);
-      let iterations = 0;
-      while (dataUrl.length / 1024 > targetKB && quality > 0.15 && iterations < 8) {
-        quality -= 0.1;
-        dataUrl = canvas.toDataURL('image/jpeg', quality);
-        iterations++;
-      }
-      resolve(dataUrl);
-    };
-    img.onerror = reject;
-    reader.readAsDataURL(file);
+    canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('ไม่สามารถบีบอัดรูปภาพได้')), 'image/jpeg', quality);
   });
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+    reader.onerror = () => reject(reader.error || new Error('อ่านไฟล์ไม่สำเร็จ'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function compressImageToBlob(file, targetBytes = TARGET_IMAGE_BYTES, maxDim = MAX_IMAGE_DIMENSION) {
+  if (!(file instanceof Blob) || !String(file.type || '').startsWith('image/')) {
+    throw new Error('รองรับเฉพาะไฟล์รูปภาพ');
+  }
+  if (file.size > MAX_SOURCE_IMAGE_BYTES) {
+    throw new Error('รูปภาพต้องมีขนาดไม่เกิน 12MB');
+  }
+
+  const sourceUrl = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    img.decoding = 'async';
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = () => reject(new Error('อุปกรณ์นี้ไม่สามารถอ่านรูปแบบไฟล์ดังกล่าวได้'));
+      img.src = sourceUrl;
+    });
+
+    const sourceWidth = img.naturalWidth || img.width;
+    const sourceHeight = img.naturalHeight || img.height;
+    if (!sourceWidth || !sourceHeight) throw new Error('รูปภาพไม่มีขนาดที่ถูกต้อง');
+
+    const scale = Math.min(1, maxDim / Math.max(sourceWidth, sourceHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(sourceWidth * scale));
+    canvas.height = Math.max(1, Math.round(sourceHeight * scale));
+    const ctx = canvas.getContext('2d', { alpha: false });
+    if (!ctx) throw new Error('อุปกรณ์ไม่รองรับการประมวลผลรูปภาพ');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    let best = await canvasToBlob(canvas, 0.86);
+    for (let quality = 0.78; best.size > targetBytes && quality >= 0.42; quality -= 0.08) {
+      best = await canvasToBlob(canvas, quality);
+    }
+    return best;
+  } finally {
+    URL.revokeObjectURL(sourceUrl);
+  }
+}
+
+function releasePendingImagePreview(image) {
+  if (image?.pending && typeof image.url === 'string' && image.url.startsWith('blob:')) {
+    URL.revokeObjectURL(image.url);
+  }
+}
+
+function createPendingImage(blob, originalName = 'homework.jpg') {
+  return {
+    url: URL.createObjectURL(blob),
+    blob,
+    name: originalName,
+    type: 'image/jpeg',
+    size: blob.size,
+    pending: true,
+  };
+}
+
+async function uploadHomeworkImage(image) {
+  if (!image?.pending || !(image.blob instanceof Blob)) return image;
+  if (!state.room || !state.repPasscode) throw new Error('สิทธิ์ตัวแทนห้องหมดอายุ กรุณากรอกรหัสอีกครั้ง');
+
+  const originalName = String(image.name || 'homework.jpg');
+  const safeBaseName = originalName
+    .replace(/\.[^.]+$/, '')
+    .replace(/[^a-zA-Z0-9_\-\u0E00-\u0E7F]+/g, '_')
+    .slice(0, 80) || 'homework';
+  const uploaded = await uploadToDriveProxy(
+    image.blob,
+    `${safeBaseName}_${Date.now()}.jpg`,
+    'การบ้านและรูปงาน'
+  );
+
+  if (!uploaded?.url || !uploaded?.fileId) throw new Error('เซิร์ฟเวอร์ไม่ส่งข้อมูลรูปกลับมา');
+  return {
+    url: uploaded.url,
+    fileId: uploaded.fileId,
+    storage: 'google-drive',
+    type: 'image/jpeg',
+    size: Number(image.blob.size) || null,
+  };
+}
+
+async function uploadPendingImages(images) {
+  const finalized = [];
+  const uploadedFileIds = [];
+  try {
+    for (const image of images.slice(0, MAX_IMAGE_COUNT)) {
+      if (image?.pending) {
+        const uploaded = await uploadHomeworkImage(image);
+        finalized.push(uploaded);
+        uploadedFileIds.push(uploaded.fileId);
+      } else {
+        const url = safeUrl(image?.url || image);
+        if (url) finalized.push({
+          url,
+          fileId: image?.fileId || null,
+          storage: image?.storage || (image?.fileId ? 'google-drive' : null),
+          type: image?.type || 'image/jpeg',
+          size: Number(image?.size) || null,
+        });
+      }
+    }
+    return { images: finalized, uploadedFileIds };
+  } catch (error) {
+    error.uploadedFileIds = uploadedFileIds;
+    throw error;
+  }
+}
+
+async function deleteHomeworkImages(fileIds) {
+  const safeFileIds = [...new Set((fileIds || []).filter(id => typeof id === 'string' && /^[a-zA-Z0-9_-]{10,}$/.test(id)))];
+  if (!safeFileIds.length) return;
+  try {
+    const res = await fetch(GOOGLE_DRIVE_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'deleteMultiple', fileIds: safeFileIds })
+    });
+    const result = await res.json().catch(() => null);
+    if (!res.ok || !result?.success) throw new Error(result?.error || `ลบไฟล์ไม่สำเร็จ (${res.status})`);
+  } catch (error) {
+    console.warn('Google Drive cleanup failed', error);
+  }
 }
 
 /* ==============================================================================
    TASK MODAL
    ============================================================================== */
 function resetTaskForm() {
+  state.currentTaskImages.forEach(releasePendingImagePreview);
   document.getElementById('taskForm').reset();
   document.getElementById('taskId').value = '';
   clearElement(document.getElementById('taskImagePreview'));
   clearElement(document.getElementById('taskAttachmentList'));
   state.currentTaskImages = [];
+  state.originalTaskImageFileIds = [];
   state.currentTaskAttachments = [];
   document.getElementById('taskModalTitle').textContent = 'เพิ่มการบ้าน';
 }
@@ -2058,8 +2183,9 @@ function openTaskModal(task) {
     document.getElementById('taskDesc').value = task.description || '';
     document.getElementById('taskType').value = task.task_type || 'INDIVIDUAL';
     document.getElementById('taskDue').value = task.due_date ? task.due_date.slice(0, 16) : '';
-    document.getElementById('taskWorkload').value = task.estimated_minutes || 20;
+    document.getElementById('taskWorkload').value = task.workload_minutes || 20;
     state.currentTaskImages = Array.isArray(task.images) ? [...task.images] : [];
+    state.originalTaskImageFileIds = state.currentTaskImages.map(image => image?.fileId).filter(Boolean);
     state.currentTaskAttachments = Array.isArray(task.attachments) ? [...task.attachments] : [];
     renderTaskImagePreview();
     renderTaskAttachmentList();
@@ -2078,8 +2204,9 @@ function renderTaskImagePreview() {
     const item = document.createElement('div');
     item.className = 'relative';
 
-    const img = document.createElement('img');
-    img.src = url;
+        const img = document.createElement('img');
+        img.src = url;
+        img.decoding = 'async';
     img.alt = 'ภาพตัวอย่าง';
     img.className = 'w-12 h-12 object-cover rounded-xl border border-slate-200 dark:border-slate-700';
 
@@ -2089,6 +2216,7 @@ function renderTaskImagePreview() {
     remove.setAttribute('aria-label', 'ลบภาพ');
     remove.textContent = '✕';
     remove.addEventListener('click', () => {
+      releasePendingImagePreview(state.currentTaskImages[index]);
       state.currentTaskImages.splice(index, 1);
       renderTaskImagePreview();
     });
@@ -2134,11 +2262,17 @@ function renderTaskAttachmentList() {
 }
 
 document.getElementById('taskImages').addEventListener('change', async (e) => {
-  for (const file of e.target.files) {
+  const remaining = Math.max(0, MAX_IMAGE_COUNT - state.currentTaskImages.length);
+  const files = Array.from(e.target.files || []).slice(0, remaining);
+  if (!remaining) toast(`แนบรูปได้สูงสุด ${MAX_IMAGE_COUNT} รูป`);
+  for (const file of files) {
     try {
-      const base64 = await compressImageToBase64(file);
-      state.currentTaskImages.push({ url: base64, type: file.type });
-    } catch (err) { console.error(err); }
+      const blob = await compressImageToBlob(file);
+      state.currentTaskImages.push(createPendingImage(blob, file.name));
+    } catch (err) {
+      console.error(err);
+      toast(err.message || `อ่านรูป "${file.name}" ไม่สำเร็จ`);
+    }
   }
   renderTaskImagePreview();
   e.target.value = '';
@@ -2148,55 +2282,91 @@ document.getElementById('taskAttachments').addEventListener('change', async (e) 
   for (const file of e.target.files) {
     if (file.size > 15 * 1024 * 1024) { toast(`ไฟล์ "${file.name}" เกิน 15MB`); continue; }
     try {
-      const uploaded = await uploadToDriveProxy(file);
-      state.currentTaskAttachments.push({ name: file.name, url: uploaded.url, size: file.size, type: file.type });
+      const uploaded = await uploadToDriveProxy(file, file.name, 'เอกสารดาวน์โหลด');
+      state.currentTaskAttachments.push({ name: file.name, url: uploaded.url, fileId: uploaded.fileId, size: file.size, type: file.type, storage: 'google-drive' });
     } catch (err) { toast('อัปโหลดไฟล์ไม่สำเร็จ: ' + file.name); }
   }
   renderTaskAttachmentList();
   e.target.value = '';
 });
 
-async function uploadToDriveProxy(file) {
-  const base64 = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+async function uploadToDriveProxy(file, fileName = file?.name || 'file', folderName = 'การบ้านและรูปงาน') {
+  if (!(file instanceof Blob)) throw new Error('ไฟล์ไม่ถูกต้อง');
+  const base64 = await blobToBase64(file);
   const res = await fetch(GOOGLE_DRIVE_SCRIPT_URL, {
     method: 'POST',
-    body: JSON.stringify({ action: 'upload', fileName: file.name, mimeType: file.type, base64: base64, grade: state.room.grade_level, room: state.room.room_number })
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({
+      action: 'upload',
+      fileName,
+      mimeType: file.type || 'application/octet-stream',
+      base64,
+      folderName,
+      grade: state.room.grade_level,
+      room: state.room.room_number,
+    })
   });
-  return res.json();
+  const result = await res.json().catch(() => null);
+  if (!res.ok || !result?.success || !result?.url) {
+    throw new Error(result?.error || `อัปโหลดไฟล์ไม่สำเร็จ (${res.status})`);
+  }
+  return result;
+}
+
+function setTaskSubmitBusy(busy, label = 'บันทึกข้อมูลการบ้าน') {
+  const button = document.getElementById('taskSubmit');
+  const text = document.getElementById('taskSubmitLabel');
+  button.disabled = busy;
+  text.textContent = label;
 }
 
 document.getElementById('taskForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  if (!state.isRep) { toast('ต้องอยู่ในโหมดตัวแทนห้องเท่านั้น'); return; }
+  if (!state.isRep || !state.repPasscode) { toast('สิทธิ์หมดอายุ กรุณาเข้าสู่โหมดตัวแทนห้องอีกครั้ง'); return; }
 
   const id = document.getElementById('taskId').value;
   const dueVal = document.getElementById('taskDue').value;
-  const payload = {
-    classroom_id: state.room.id,
-    subject_id: document.getElementById('taskSubject').value || null,
-    title: document.getElementById('taskTitle').value.trim(),
-    description: document.getElementById('taskDesc').value.trim(),
-    task_type: document.getElementById('taskType').value,
-    due_date: dueVal ? new Date(dueVal).toISOString() : null,
-    estimated_minutes: parseInt(document.getElementById('taskWorkload').value, 10) || 20,
-    images: state.currentTaskImages,
-    attachments: state.currentTaskAttachments,
-  };
+  if (!dueVal) { toast('กรุณาระบุกำหนดส่ง'); return; }
 
-  let error;
-  if (id) ({ error } = await supabase.from('assignments').update(payload).eq('id', id));
-  else ({ error } = await supabase.from('assignments').insert(payload));
+  let uploadedFileIds = [];
+  setTaskSubmitBusy(true, state.currentTaskImages.some(image => image?.pending) ? 'กำลังอัปโหลดรูป…' : 'กำลังบันทึก…');
+  try {
+    const uploadResult = await uploadPendingImages(state.currentTaskImages);
+    uploadedFileIds = uploadResult.uploadedFileIds;
+    setTaskSubmitBusy(true, 'กำลังบันทึก…');
 
-  if (error) { toast('บันทึกไม่สำเร็จ: ' + error.message); return; }
+    const payload = {
+      classroom_id: state.room.id,
+      subject_id: document.getElementById('taskSubject').value || null,
+      title: document.getElementById('taskTitle').value.trim(),
+      description: document.getElementById('taskDesc').value.trim(),
+      task_type: document.getElementById('taskType').value,
+      due_date: new Date(dueVal).toISOString(),
+      workload_minutes: parseInt(document.getElementById('taskWorkload').value, 10) || 20,
+      images: uploadResult.images,
+      attachments: state.currentTaskAttachments,
+    };
+    let error;
+    if (id) ({ error } = await supabase.from('assignments').update(payload).eq('id', id));
+    else ({ error } = await supabase.from('assignments').insert(payload));
+    if (error) throw error;
 
-  closeModal('taskModalOverlay');
-  await loadEverything();
-  toast('บันทึกการบ้านเรียบร้อย');
+    const keptFileIds = new Set(uploadResult.images.map(image => image?.fileId).filter(Boolean));
+    const removedFileIds = state.originalTaskImageFileIds.filter(fileId => !keptFileIds.has(fileId));
+    await deleteHomeworkImages(removedFileIds);
+    state.currentTaskImages.forEach(releasePendingImagePreview);
+    state.currentTaskImages = [];
+    closeModal('taskModalOverlay');
+    await loadEverything();
+    toast('บันทึกการบ้านเรียบร้อย');
+  } catch (error) {
+    const rollbackFileIds = error.uploadedFileIds || uploadedFileIds;
+    await deleteHomeworkImages(rollbackFileIds);
+    console.error(error);
+    toast('บันทึกไม่สำเร็จ: ' + (error.message || 'กรุณาลองใหม่'), '', null, 4500);
+  } finally {
+    setTaskSubmitBusy(false);
+  }
 });
 
 document.getElementById('fabPlus').addEventListener('click', () => { haptic(10); openTaskModal(null); });
@@ -2211,14 +2381,23 @@ document.getElementById('cameraInput').addEventListener('change', async (e) => {
   if (!file) return;
   e.target.value = '';
 
-  const base64DataUrl = await compressImageToBase64(file, 250, 1400);
-  document.getElementById('aiReviewImg').src = base64DataUrl;
+  let rawBase64 = '';
+  try {
+    releasePendingImagePreview(state.aiPendingImage);
+    const blob = await compressImageToBlob(file, TARGET_IMAGE_BYTES, 1400);
+    state.aiPendingImage = createPendingImage(blob, file.name);
+    document.getElementById('aiReviewImg').src = state.aiPendingImage.url;
+    rawBase64 = await blobToBase64(blob);
+  } catch (error) {
+    console.error(error);
+    toast(error.message || 'อ่านรูปจากกล้องไม่สำเร็จ');
+    return;
+  }
+
   document.getElementById('aiReviewFields').classList.add('hidden');
   document.getElementById('aiReviewStatus').classList.remove('hidden');
   openModal('aiReviewOverlay');
-  state.aiPendingImage = base64DataUrl;
 
-  const rawBase64 = base64DataUrl.split(',')[1];
   const prompt = `วิเคราะห์รูปภาพการบ้านนี้ แล้วตอบกลับเป็น JSON ภาษาไทยตามโครงสร้างนี้เท่านั้น:
 {
   "subjectCode": "รหัสวิชา (ถ้ามี เช่น ส32101)",
@@ -2230,9 +2409,11 @@ document.getElementById('cameraInput').addEventListener('change', async (e) => {
   try {
     const res = await fetch(GOOGLE_DRIVE_SCRIPT_URL, {
       method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: 'geminiScan', imageBase64: rawBase64, mimeType: 'image/jpeg', prompt: prompt })
     });
-    const json = await res.json();
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success) throw new Error(json?.error || `AI ตอบกลับผิดพลาด (${res.status})`);
     const result = json.data || JSON.parse(json.text || '{}');
 
     document.getElementById('aiReviewStatus').classList.add('hidden');
@@ -2263,9 +2444,20 @@ document.getElementById('btnAiUseData').addEventListener('click', () => {
   document.getElementById('taskTitle').value = document.getElementById('aiTitle').value;
   document.getElementById('taskDesc').value = document.getElementById('aiDesc').value;
   if (state.aiPendingImage) {
-    state.currentTaskImages.push({ url: state.aiPendingImage, type: 'image/jpeg' });
+    state.currentTaskImages.push(state.aiPendingImage);
+    state.aiPendingImage = null;
     renderTaskImagePreview();
   }
+});
+
+document.querySelector('[data-close="aiReviewOverlay"]').addEventListener('click', () => {
+  releasePendingImagePreview(state.aiPendingImage);
+  state.aiPendingImage = null;
+});
+
+window.addEventListener('pagehide', () => {
+  state.currentTaskImages.forEach(releasePendingImagePreview);
+  releasePendingImagePreview(state.aiPendingImage);
 });
 
 /* ==============================================================================
