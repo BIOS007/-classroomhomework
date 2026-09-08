@@ -552,6 +552,15 @@
         <input id="taskWorkload" type="number" min="5" step="5" value="20" class="w-full mt-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs">
       </div>
 
+      <label id="taskNotifyLineWrap" class="flex items-center gap-3 rounded-xl border border-emerald-200 dark:border-emerald-900/70 bg-emerald-50/80 dark:bg-emerald-950/20 px-3 py-2.5 cursor-pointer">
+        <input id="taskNotifyLine" type="checkbox" checked
+          class="w-5 h-5 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+        <span class="min-w-0">
+          <span class="block text-xs font-bold text-emerald-800 dark:text-emerald-300">🔔 แจ้งเตือนงานนี้ในกลุ่ม LINE</span>
+          <span id="taskNotifyLineHint" class="block text-[10px] text-emerald-700/80 dark:text-emerald-400/80 mt-0.5">เอาเครื่องหมายถูกออกได้ หากยังไม่ต้องการแจ้งเพื่อน</span>
+        </span>
+      </label>
+
       <div>
         <label class="text-xs font-semibold text-slate-500">รูปภาพประกอบ (สูงสุด 3 รูป)</label>
         <input id="taskImages" type="file" accept="image/*" multiple
@@ -1109,7 +1118,7 @@ async function loadTasks() {
   if (!state.room) return;
   const { data, error } = await supabase
     .from('assignments')
-    .select('id, classroom_id, subject_id, title, description, task_type, due_date, created_at, workload_minutes, images, attachments, subjects(subject_code, subject_name)')
+    .select('id, classroom_id, subject_id, title, description, task_type, due_date, created_at, workload_minutes, notify_line, images, attachments, subjects(subject_code, subject_name)')
     .eq('classroom_id', state.room.id)
     .order('due_date', { ascending: true });
   if (error) throw error;
@@ -2196,6 +2205,13 @@ async function deleteHomeworkImages(fileIds) {
 function resetTaskForm() {
   state.currentTaskImages.forEach(releasePendingImagePreview);
   document.getElementById('taskForm').reset();
+  const notifyCheckbox = document.getElementById('taskNotifyLine');
+  const notifyWrap = document.getElementById('taskNotifyLineWrap');
+  notifyCheckbox.checked = true;
+  notifyCheckbox.disabled = false;
+  notifyWrap.classList.remove('opacity-60', 'cursor-not-allowed');
+  notifyWrap.classList.add('cursor-pointer');
+  document.getElementById('taskNotifyLineHint').textContent = 'เอาเครื่องหมายถูกออกได้ หากยังไม่ต้องการแจ้งเพื่อน';
   document.getElementById('taskId').value = '';
   clearElement(document.getElementById('taskImagePreview'));
   clearElement(document.getElementById('taskAttachmentList'));
@@ -2216,6 +2232,13 @@ function openTaskModal(task) {
     document.getElementById('taskType').value = task.task_type || 'INDIVIDUAL';
     document.getElementById('taskDue').value = toDateTimeLocalInputValue(task.due_date);
     document.getElementById('taskWorkload').value = task.workload_minutes || 20;
+    const notifyCheckbox = document.getElementById('taskNotifyLine');
+    const notifyWrap = document.getElementById('taskNotifyLineWrap');
+    notifyCheckbox.checked = task.notify_line !== false;
+    notifyCheckbox.disabled = true;
+    notifyWrap.classList.add('opacity-60', 'cursor-not-allowed');
+    notifyWrap.classList.remove('cursor-pointer');
+    document.getElementById('taskNotifyLineHint').textContent = 'การแก้ไขงานเดิมจะไม่ส่งข้อความ LINE ซ้ำ';
     state.currentTaskImages = Array.isArray(task.images) ? [...task.images] : [];
     state.originalTaskImageFileIds = state.currentTaskImages.map(image => image?.fileId).filter(Boolean);
     state.currentTaskAttachments = Array.isArray(task.attachments) ? [...task.attachments] : [];
@@ -2360,6 +2383,7 @@ document.getElementById('taskForm').addEventListener('submit', async (e) => {
 
   const id = document.getElementById('taskId').value;
   const dueVal = document.getElementById('taskDue').value;
+  const shouldNotifyLine = document.getElementById('taskNotifyLine').checked;
   if (!dueVal) { toast('กรุณาระบุกำหนดส่ง'); return; }
 
   let uploadedFileIds = [];
@@ -2380,6 +2404,7 @@ document.getElementById('taskForm').addEventListener('submit', async (e) => {
       images: uploadResult.images,
       attachments: state.currentTaskAttachments,
     };
+    if (!id) payload.notify_line = shouldNotifyLine;
     let error;
     if (id) {
       ({ error } = await supabase.from('assignments').update(payload).eq('id', id));
@@ -2395,7 +2420,9 @@ document.getElementById('taskForm').addEventListener('submit', async (e) => {
     state.currentTaskImages = [];
     closeModal('taskModalOverlay');
     await loadEverything();
-    toast(id ? 'แก้ไขการบ้านเรียบร้อย' : 'เพิ่มการบ้านแล้ว ระบบจะส่งแจ้งเตือน LINE');
+    toast(id
+      ? 'แก้ไขการบ้านเรียบร้อย'
+      : (shouldNotifyLine ? 'เพิ่มการบ้านแล้ว ระบบจะส่งแจ้งเตือน LINE' : 'เพิ่มการบ้านแล้ว โดยไม่แจ้งเตือน LINE'));
   } catch (error) {
     const rollbackFileIds = error.uploadedFileIds || uploadedFileIds;
     await deleteHomeworkImages(rollbackFileIds);
