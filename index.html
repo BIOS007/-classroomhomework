@@ -651,7 +651,8 @@ const MAX_IMAGE_COUNT = 3;
 const MAX_SOURCE_IMAGE_BYTES = 12 * 1024 * 1024;
 const TARGET_IMAGE_BYTES = 500 * 1024;
 const MAX_IMAGE_DIMENSION = 1600;
-const APP_VERSION = "2026.09.03.1";
+const DRIVE_REQUEST_TIMEOUT_MS = 60000;
+const APP_VERSION = "2026.09.08.2";
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -2031,6 +2032,39 @@ function blobToBase64(blob) {
   });
 }
 
+function representativeAuthPayload() {
+  if (!state.room?.id || !state.repPasscode) {
+    throw new Error('สิทธิ์ตัวแทนห้องหมดอายุ กรุณากรอกรหัสอีกครั้ง');
+  }
+  return {
+    classroomId: state.room.id,
+    passcode: state.repPasscode,
+  };
+}
+
+async function postDriveApi(payload, timeoutMs = DRIVE_REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(GOOGLE_DRIVE_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    const result = await response.json().catch(() => null);
+    if (!response.ok || !result?.success) {
+      throw new Error(result?.error || `เซิร์ฟเวอร์ตอบกลับผิดพลาด (${response.status})`);
+    }
+    return result;
+  } catch (error) {
+    if (error?.name === 'AbortError') throw new Error('การเชื่อมต่อใช้เวลานานเกินไป กรุณาลองใหม่');
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function compressImageToBlob(file, targetBytes = TARGET_IMAGE_BYTES, maxDim = MAX_IMAGE_DIMENSION) {
   if (!(file instanceof Blob) || !String(file.type || '').startsWith('image/')) {
     throw new Error('รองรับเฉพาะไฟล์รูปภาพ');
@@ -2146,13 +2180,11 @@ async function deleteHomeworkImages(fileIds) {
   const safeFileIds = [...new Set((fileIds || []).filter(id => typeof id === 'string' && /^[a-zA-Z0-9_-]{10,}$/.test(id)))];
   if (!safeFileIds.length) return;
   try {
-    const res = await fetch(GOOGLE_DRIVE_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'deleteMultiple', fileIds: safeFileIds })
+    await postDriveApi({
+      action: 'deleteMultiple',
+      fileIds: safeFileIds,
+      ...representativeAuthPayload(),
     });
-    const result = await res.json().catch(() => null);
-    if (!res.ok || !result?.success) throw new Error(result?.error || `ลบไฟล์ไม่สำเร็จ (${res.status})`);
   } catch (error) {
     console.warn('Google Drive cleanup failed', error);
   }
@@ -2182,7 +2214,7 @@ function openTaskModal(task) {
     document.getElementById('taskTitle').value = task.title || '';
     document.getElementById('taskDesc').value = task.description || '';
     document.getElementById('taskType').value = task.task_type || 'INDIVIDUAL';
-    document.getElementById('taskDue').value = task.due_date ? task.due_date.slice(0, 16) : '';
+    document.getElementById('taskDue').value = toDateTimeLocalInputValue(task.due_date);
     document.getElementById('taskWorkload').value = task.workload_minutes || 20;
     state.currentTaskImages = Array.isArray(task.images) ? [...task.images] : [];
     state.originalTaskImageFileIds = state.currentTaskImages.map(image => image?.fileId).filter(Boolean);
@@ -2293,24 +2325,26 @@ document.getElementById('taskAttachments').addEventListener('change', async (e) 
 async function uploadToDriveProxy(file, fileName = file?.name || 'file', folderName = 'การบ้านและรูปงาน') {
   if (!(file instanceof Blob)) throw new Error('ไฟล์ไม่ถูกต้อง');
   const base64 = await blobToBase64(file);
-  const res = await fetch(GOOGLE_DRIVE_SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({
-      action: 'upload',
-      fileName,
-      mimeType: file.type || 'application/octet-stream',
-      base64,
-      folderName,
-      grade: state.room.grade_level,
-      room: state.room.room_number,
-    })
+  const result = await postDriveApi({
+    action: 'upload',
+    fileName,
+    mimeType: file.type || 'application/octet-stream',
+    base64,
+    folderName,
+    grade: state.room.grade_level,
+    room: state.room.room_number,
+    ...representativeAuthPayload(),
   });
-  const result = await res.json().catch(() => null);
-  if (!res.ok || !result?.success || !result?.url) {
-    throw new Error(result?.error || `อัปโหลดไฟล์ไม่สำเร็จ (${res.status})`);
-  }
+  if (!result?.url) throw new Error('เซิร์ฟเวอร์ไม่ส่ง URL ไฟล์กลับมา');
   return result;
+}
+
+function toDateTimeLocalInputValue(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
 }
 
 function setTaskSubmitBusy(busy, label = 'บันทึกข้อมูลการบ้าน') {
@@ -2347,8 +2381,11 @@ document.getElementById('taskForm').addEventListener('submit', async (e) => {
       attachments: state.currentTaskAttachments,
     };
     let error;
-    if (id) ({ error } = await supabase.from('assignments').update(payload).eq('id', id));
-    else ({ error } = await supabase.from('assignments').insert(payload));
+    if (id) {
+      ({ error } = await supabase.from('assignments').update(payload).eq('id', id));
+    } else {
+      ({ error } = await supabase.from('assignments').insert(payload).select('id').single());
+    }
     if (error) throw error;
 
     const keptFileIds = new Set(uploadResult.images.map(image => image?.fileId).filter(Boolean));
@@ -2358,7 +2395,7 @@ document.getElementById('taskForm').addEventListener('submit', async (e) => {
     state.currentTaskImages = [];
     closeModal('taskModalOverlay');
     await loadEverything();
-    toast('บันทึกการบ้านเรียบร้อย');
+    toast(id ? 'แก้ไขการบ้านเรียบร้อย' : 'เพิ่มการบ้านแล้ว ระบบจะส่งแจ้งเตือน LINE');
   } catch (error) {
     const rollbackFileIds = error.uploadedFileIds || uploadedFileIds;
     await deleteHomeworkImages(rollbackFileIds);
@@ -2407,13 +2444,13 @@ document.getElementById('cameraInput').addEventListener('change', async (e) => {
 }`;
 
   try {
-    const res = await fetch(GOOGLE_DRIVE_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'geminiScan', imageBase64: rawBase64, mimeType: 'image/jpeg', prompt: prompt })
+    const json = await postDriveApi({
+      action: 'geminiScan',
+      imageBase64: rawBase64,
+      mimeType: 'image/jpeg',
+      prompt: prompt,
+      ...representativeAuthPayload(),
     });
-    const json = await res.json().catch(() => null);
-    if (!res.ok || !json?.success) throw new Error(json?.error || `AI ตอบกลับผิดพลาด (${res.status})`);
     const result = json.data || JSON.parse(json.text || '{}');
 
     document.getElementById('aiReviewStatus').classList.add('hidden');
