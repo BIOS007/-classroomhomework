@@ -667,6 +667,32 @@ body.has-modal { overflow:hidden!important; }
 @media(max-width:480px) { .page-intro { align-items:flex-start; gap:10px; } .page-intro h2 { font-size:24px; } #fabWrap { flex-direction:column-reverse; gap:6px; } #fabWrap button { font-size:13px; height:44px!important; } .search-row { grid-template-columns:1fr; } .search-row>label:last-child { max-width:190px; } .task-card { padding:15px!important; } .app-header-inner { padding:12px 16px!important; } .task-heading { font-size:17px; } }
 
 </style>
+<style>
+.subject-manager { width:min(780px,100%); max-height:90dvh; display:flex; flex-direction:column; border:1px solid var(--line); border-radius:22px; overflow:hidden; }
+.subject-manager-head,.subject-manager-footer { padding:18px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-shrink:0; }
+.subject-manager-head { border-bottom:1px solid var(--line); }
+.subject-manager-footer { border-top:1px solid var(--line); padding-bottom:max(16px,env(safe-area-inset-bottom)); }
+.subject-manager-body { overflow-y:auto; padding:18px 20px; min-height:0; overscroll-behavior:contain; }
+.subject-tools { display:flex; flex-wrap:wrap; gap:10px; }
+.subject-primary,.subject-secondary,.subject-close { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:10px 14px; border-radius:12px; font-size:14px; font-weight:600; }
+.subject-primary { background:var(--brand,#26745d); color:white; }
+.subject-secondary,.subject-close { border:1px solid var(--line); background:var(--page); }
+.subject-help { margin:12px 0; color:var(--muted); font-size:13px; line-height:1.7; }
+.subject-status { padding:10px 0; font-size:14px; color:var(--muted); }
+.subject-status[data-error="true"] { color:#dc2626; }
+.subject-schedule-preview { max-width:100%; max-height:280px; object-fit:contain; border:1px solid var(--line); border-radius:12px; margin:12px auto; }
+.subject-editor-rows { display:grid; gap:12px; }
+.subject-edit-row { padding:14px; border:1px solid var(--line); border-radius:14px; }
+.subject-row-heading { display:flex; gap:8px; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:13px; color:var(--muted); }
+.subject-row-heading label { display:flex; align-items:center; gap:8px; }
+.subject-row-heading input { width:18px; height:18px; accent-color:#26745d; }
+.subject-field-grid { display:grid; grid-template-columns:1fr 2fr; gap:10px; }
+.subject-field-grid label { display:flex; flex-direction:column; gap:5px; font-size:13px; }
+.subject-field-grid label:last-child { grid-column:1/-1; }
+.subject-field-grid input { width:100%; min-height:44px; padding:10px; border:1px solid var(--line); border-radius:10px; font-size:16px; }
+.subject-row-remove { color:#b42318; min-height:36px; padding:6px 10px; border-radius:8px; }
+@media(max-width:480px) { .subject-manager-head,.subject-manager-body,.subject-manager-footer { padding-left:14px; padding-right:14px; } .subject-field-grid { grid-template-columns:1fr; } .subject-manager-footer { align-items:flex-start; flex-direction:column; } .subject-manager-footer button { width:100%; } }
+</style>
 </head>
 
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col justify-between">
@@ -686,6 +712,7 @@ body.has-modal { overflow:hidden!important; }
       </div>
 
       <details class="top-tools"><summary><i data-lucide="menu" class="w-4 h-4"></i>เมนู</summary><div class="tool-menu">
+        <button id="btnManageSubjects" type="button"><i data-lucide="list-filter" class="w-4 h-4"></i>จัดการรายวิชา / ตารางเรียน</button>
         <button id="btnRepMode" type="button"><i data-lucide="shield-check" class="w-4 h-4"></i><span id="repModeLabel">ตัวแทนห้อง</span></button>
         <button id="btnDarkToggle" type="button"><i data-lucide="sun-moon" class="w-4 h-4"></i>สลับธีมสี</button>
         <button id="btnLineBot" type="button"><i data-lucide="bot" class="w-4 h-4"></i>LINE ห้องนี้</button>
@@ -763,6 +790,30 @@ body.has-modal { overflow:hidden!important; }
     </button>
     <p id="pickerError" class="hidden text-xs text-rose-600 mt-2 text-center font-medium"></p>
   </div>
+</div>
+
+<div id="subjectManagerOverlay" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center px-3 safe-modal">
+  <section class="modal-panel subject-manager">
+    <header class="subject-manager-head">
+      <div><h2 id="subjectManagerTitle" class="font-bold text-lg">จัดการรายวิชา</h2><p class="text-sm text-slate-500">สแกนตารางเรียนด้วย Gemini หรือกรอกเองได้</p></div>
+      <button type="button" data-close="subjectManagerOverlay" aria-label="ปิดจัดการรายวิชา" class="subject-close"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </header>
+    <div class="subject-manager-body">
+      <div class="subject-tools">
+        <button type="button" id="btnScanSchedule" class="subject-primary"><i data-lucide="camera" class="w-4 h-4"></i>เลือกรูปตารางเรียน</button>
+        <button type="button" id="btnAddSubjectRow" class="subject-secondary"><i data-lucide="plus" class="w-4 h-4"></i>เพิ่มวิชาเอง</button>
+        <input id="scheduleImageInput" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" class="hidden" />
+      </div>
+      <p class="subject-help">รูปจะส่งให้ Gemini อ่านชื่อวิชา รหัสวิชา และชื่อครู ตรวจข้อมูลให้ถูกต้องก่อนบันทึก รูปนี้ใช้สแกนเท่านั้น</p>
+      <img id="schedulePreview" class="hidden subject-schedule-preview" alt="ตารางเรียนที่เลือกเพื่อสแกน" />
+      <p id="subjectManagerStatus" role="status" aria-live="polite" class="subject-status"></p>
+      <div id="subjectEditorRows" class="subject-editor-rows"></div>
+    </div>
+    <footer class="subject-manager-footer">
+      <span id="subjectDraftCount" class="text-sm text-slate-500"></span>
+      <button type="button" id="btnSaveSubjects" class="subject-primary"><i data-lucide="save" class="w-4 h-4"></i>บันทึกรายวิชา</button>
+    </footer>
+  </section>
 </div>
 
 <!-- ============================= PASSCODE GATE ============================= -->
@@ -959,7 +1010,7 @@ const MAX_SOURCE_IMAGE_BYTES = 12 * 1024 * 1024;
 const TARGET_IMAGE_BYTES = 500 * 1024;
 const MAX_IMAGE_DIMENSION = 1600;
 const DRIVE_REQUEST_TIMEOUT_MS = 60000;
-const APP_VERSION = "2026.09.10.secure.1";
+const APP_VERSION = "2026.09.13.subjects.1";
 
 let activeRoomSession = null;
 const originalFetch = window.fetch.bind(window);
@@ -1263,7 +1314,12 @@ function openModal(id) {
   document.body.classList.add('has-modal');
   requestAnimationFrame(()=>overlay.querySelector('input:not([type="hidden"]):not(:disabled),select:not(:disabled),button:not(:disabled)')?.focus({preventScroll:true}));
 }
-function closeModal(id) {
+function closeModal(id, discardSubjectChanges=false) {
+  if(id==='subjectManagerOverlay') {
+    if(subjectEditor?.saving || subjectEditor?.scanning){toast('กำลังอ่านรูปหรือบันทึก กรุณารอสักครู่');return;}
+    if(!discardSubjectChanges && subjectEditorHasChanges() && !confirm('ยังมีรายวิชาที่ไม่ได้บันทึก ต้องการปิดและทิ้งการแก้ไขหรือไม่?'))return;
+    disposeSubjectEditor();
+  }
   if(id==='taskModalOverlay'&&(state.taskSaving||state.preparingFiles)){toast('กำลังจัดการไฟล์ กรุณารอให้เสร็จก่อน');return;}
   document.getElementById(id).classList.add('hidden');
   const index=modalStack.findIndex(m=>m.id===id);const entry=index<0?null:modalStack.splice(index,1)[0];
@@ -2811,6 +2867,160 @@ async function init() {
   document.documentElement.dataset.appReady='true';
 }
 init();
+
+/* SUBJECT MANAGER: room-scoped manual entry and Gemini timetable import. */
+let subjectEditor = null;
+const SUBJECT_FIELDS = ['subject_code','subject_name','teacher_name'];
+function subjectValues(row) {
+  return Object.fromEntries(SUBJECT_FIELDS.map(key => [key, typeof row?.[key] === 'string' ? row[key].trim() : '']));
+}
+function subjectKey(value) { return String(value || '').normalize('NFKC').replace(/\s+/g,'').toLocaleLowerCase('th'); }
+function sameSubject(a,b) {
+  const ac=subjectKey(a.subject_code),bc=subjectKey(b.subject_code);
+  if(ac && bc) return ac===bc;
+  return !!subjectKey(a.subject_name) && subjectKey(a.subject_name)===subjectKey(b.subject_name);
+}
+function sameSubjectValues(a,b) { return SUBJECT_FIELDS.every(key => subjectValues(a)[key]===subjectValues(b)[key]); }
+function newSubjectId() {
+  if(crypto.randomUUID)return crypto.randomUUID();
+  const bytes=crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;
+  const hex=[...bytes].map(n=>n.toString(16).padStart(2,'0')).join('');
+  return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+}
+function subjectStatus(message,error=false) {
+  const el=document.getElementById('subjectManagerStatus');el.textContent=message;el.dataset.error=String(error);
+}
+function subjectBusy(busy) {
+  document.querySelectorAll('#subjectManagerOverlay button,#subjectManagerOverlay input').forEach(el=>el.disabled=busy);
+}
+function disposeSubjectEditor() {
+  if(subjectEditor?.previewUrl)URL.revokeObjectURL(subjectEditor.previewUrl);
+  subjectEditor=null;
+  const image=document.getElementById('schedulePreview');image.removeAttribute('src');image.classList.add('hidden');
+}
+function subjectEditorHasChanges() {
+  return !!subjectEditor?.rows.some(row=>row.selected && (row.original ? !sameSubjectValues(row,row.original) : SUBJECT_FIELDS.some(key=>row[key].trim())));
+}
+async function openSubjectManager() {
+  if(!state.room?.id){toast('เลือกห้องเรียนก่อน');return;}
+  if(!state.isRep){openModal('passcodeOverlay');toast('เข้าโหมดตัวแทนห้อง แล้วเปิดจัดการรายวิชาอีกครั้ง');return;}
+  const roomId=state.room.id;
+  try {
+    await verifyWriteAccess(roomId);
+    const {data,error}=await supabase.from('subjects').select('id,classroom_id,subject_code,subject_name,teacher_name,teacher_image_url,subject_icon_url').eq('classroom_id',roomId).order('subject_name');
+    if(error)throw error;if(state.room?.id!==roomId)return;
+    disposeSubjectEditor();
+    subjectEditor={roomId,rows:(data||[]).map(row=>({id:row.id,...subjectValues(row),original:subjectValues(row),selected:true})),scanning:false,saving:false,previewUrl:null};
+    if(!subjectEditor.rows.length)subjectEditor.rows.push({id:newSubjectId(),...subjectValues({}),original:null,selected:true});
+    document.getElementById('subjectManagerTitle').textContent=`รายวิชา ม.${state.room.grade_level}/${state.room.room_number}`;
+    subjectStatus('แก้ไขวิชาเดิม เพิ่มวิชาเอง หรือเลือกรูปตารางเรียนให้ Gemini สแกนได้');
+    renderSubjectEditor();openModal('subjectManagerOverlay');
+  }catch(error){toast('เปิดรายวิชาไม่สำเร็จ: '+(error.message||'กรุณาลองใหม่'));}
+}
+function renderSubjectEditor() {
+  const container=document.getElementById('subjectEditorRows');clearElement(container);
+  if(!subjectEditor)return;
+  subjectEditor.rows.forEach((row,index)=>{
+    const card=document.createElement('div');card.className='subject-edit-row';
+    const heading=document.createElement('div');heading.className='subject-row-heading';
+    const label=document.createElement('label');
+    const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=row.selected;
+    checkbox.setAttribute('aria-label',`บันทึกรายวิชาแถวที่ ${index+1}`);
+    checkbox.addEventListener('change',()=>{row.selected=checkbox.checked;updateSubjectDraftCount();});
+    label.append(checkbox,document.createTextNode(`${index+1}. ${row.original?'วิชาเดิม':'วิชาใหม่'}`));heading.append(label);
+    if(!row.original){const remove=document.createElement('button');remove.type='button';remove.className='subject-row-remove';remove.textContent='เอาแถวนี้ออก';remove.addEventListener('click',()=>{subjectEditor.rows=subjectEditor.rows.filter(r=>r!==row);renderSubjectEditor();});heading.append(remove);}
+    card.append(heading);
+    const fields=document.createElement('div');fields.className='subject-field-grid';
+    [['subject_code','รหัสวิชา (ถ้ามี)',20],['subject_name','ชื่อวิชา *',100],['teacher_name','ชื่อครู (ถ้ามี)',100]].forEach(([key,title,max])=>{
+      const field=document.createElement('label');field.textContent=title;
+      const input=document.createElement('input');input.type='text';input.inputMode='text';input.maxLength=max;input.value=row[key];input.dataset.subjectField=key;input.dataset.subjectId=row.id;
+      input.addEventListener('input',()=>{row[key]=input.value;row.selected=true;checkbox.checked=true;updateSubjectDraftCount();});field.append(input);fields.append(field);
+    });card.append(fields);container.append(card);
+  });
+  updateSubjectDraftCount();subjectBusy(subjectEditor.scanning||subjectEditor.saving);
+}
+function updateSubjectDraftCount() {
+  document.getElementById('subjectDraftCount').textContent=`เลือก ${subjectEditor?.rows.filter(r=>r.selected).length||0} รายวิชา · บันทึกเฉพาะที่เพิ่มหรือแก้ไข`;
+}
+function mergeScannedSubjects(rows,scanned) {
+  if(!Array.isArray(scanned)||scanned.length>80)throw new Error('รูปแบบผลสแกนไม่ถูกต้อง กรุณาลองรูปใหม่หรือเพิ่มเอง');
+  const result=rows.map(row=>({...row}));let added=0,matched=0;
+  for(const raw of scanned){
+    const value=subjectValues(raw);if(!value.subject_name&&!value.subject_code)continue;
+    if(value.subject_code.length>20||value.subject_name.length>100||value.teacher_name.length>100)throw new Error('ผลสแกนมีข้อความยาวเกินช่องรายวิชา กรุณาใช้รูปที่ชัดขึ้นหรือเพิ่มเอง');
+    const matches=result.filter(row=>sameSubject(row,value));
+    if(matches.length>1)throw new Error(`พบชื่อวิชา “${value.subject_name}” หลายรหัส กรุณาเพิ่มเองเพื่อเลือกรหัสให้ถูกต้อง`);
+    if(matches.length){SUBJECT_FIELDS.forEach(key=>{if(!matches[0][key]&&value[key])matches[0][key]=value[key];});matched++;}
+    else {result.push({id:newSubjectId(),...value,original:null,selected:true});added++;}
+  }
+  return {rows:result.filter(r=>r.original||SUBJECT_FIELDS.some(key=>r[key].trim())),added,matched};
+}
+function prepareSubjectChanges(rows,fresh,roomId) {
+  const payload=[];
+  for(const row of rows.filter(r=>r.selected)){
+    const value=subjectValues(row);
+    if(!row.original&&!SUBJECT_FIELDS.some(key=>value[key]))continue;
+    if(row.original&&sameSubjectValues(value,row.original))continue;
+    if(!value.subject_name)throw new Error('กรอกชื่อวิชาให้ครบ หรือเอาติ๊กออกจากแถวที่ยังไม่ต้องการบันทึก');
+    if(value.subject_code.length>20||value.subject_name.length>100||value.teacher_name.length>100)throw new Error('รหัสวิชาต้องไม่เกิน 20 ตัวอักษร ชื่อวิชาและชื่อครูไม่เกิน 100 ตัวอักษร');
+    const current=fresh.find(s=>s.id===row.id);
+    if(row.original&&!current)throw new Error('มีวิชาถูกลบจากอุปกรณ์อื่น กรุณาปิดแล้วเปิดรายวิชาใหม่');
+    if(current&&!sameSubjectValues(current,value)&&(!row.original||!sameSubjectValues(current,row.original)))throw new Error('รายวิชามีการแก้ไขจากอุปกรณ์อื่น กรุณาปิดแล้วเปิดใหม่เพื่อดูข้อมูลล่าสุด');
+    if(current&&sameSubjectValues(current,value))continue;
+    payload.push({id:row.id,classroom_id:roomId,...value,teacher_image_url:current?.teacher_image_url||null,subject_icon_url:current?.subject_icon_url||null});
+  }
+  const projected=[...fresh.filter(s=>!payload.some(p=>p.id===s.id)),...payload];
+  for(const row of payload)if(projected.some(s=>s.id!==row.id&&sameSubject(s,row)))throw new Error(`วิชา “${row.subject_name}” ซ้ำกับอีกแถว กรุณาแก้รหัส/ชื่อ หรือเอาติ๊กออกจากแถวซ้ำ`);
+  return payload;
+}
+async function scanScheduleFile(file) {
+  const editor=subjectEditor;if(!file||!editor||editor.scanning||editor.saving)return;
+  editor.scanning=true;subjectBusy(true);subjectStatus('กำลังเตรียมรูปและส่งให้ Gemini อ่านตารางเรียน…');
+  try {
+    await verifyWriteAccess(editor.roomId);
+    const blob=await compressImageToBlob(file,2*1024*1024,2800);
+    if(editor.previewUrl)URL.revokeObjectURL(editor.previewUrl);editor.previewUrl=URL.createObjectURL(blob);
+    const image=document.getElementById('schedulePreview');image.src=editor.previewUrl;image.classList.remove('hidden');
+    const result=await postDriveApi({action:'geminiScheduleScan',imageBase64:await blobToBase64(blob),mimeType:'image/jpeg',...representativeAuthPayload()},120000);
+    if(subjectEditor!==editor||state.room?.id!==editor.roomId)return;
+    const data=result.data||JSON.parse(result.text||'{}');
+    const merged=mergeScannedSubjects(editor.rows,data.subjects);
+    editor.rows=merged.rows;renderSubjectEditor();
+    subjectStatus(merged.added||merged.matched?`Gemini อ่านได้แล้ว: เพิ่ม ${merged.added} วิชา พบวิชาเดิม/ซ้ำ ${merged.matched} รายการ ตรวจแก้ข้อมูลก่อนกดบันทึก`:'ยังอ่านรายวิชาไม่พบ ลองรูปที่ชัดขึ้น หรือกด “เพิ่มวิชาเอง”',!merged.added&&!merged.matched);
+  }catch(error){subjectStatus('สแกนไม่สำเร็จ: '+(error.message||'กรุณาลองใหม่')+' · ยังเพิ่มวิชาเองได้',true);}
+  finally{editor.scanning=false;if(subjectEditor===editor)subjectBusy(false);}
+}
+async function saveSubjectEditor() {
+  const editor=subjectEditor;if(!editor||editor.scanning||editor.saving)return;
+  editor.saving=true;subjectBusy(true);subjectStatus('กำลังตรวจและบันทึกรายวิชา…');let committed=false;
+  try {
+    await verifyWriteAccess(editor.roomId);
+    const {data:fresh,error:readError}=await supabase.from('subjects').select('id,classroom_id,subject_code,subject_name,teacher_name,teacher_image_url,subject_icon_url').eq('classroom_id',editor.roomId);
+    if(readError)throw readError;
+    if(state.room?.id!==editor.roomId)throw new Error('ห้องเรียนเปลี่ยนไป กรุณาเปิดรายวิชาใหม่');
+    const payload=prepareSubjectChanges(editor.rows,fresh||[],editor.roomId);
+    if(!payload.length){
+      editor.rows.forEach(row=>{const saved=(fresh||[]).find(s=>s.id===row.id);if(saved&&sameSubjectValues(saved,row))row.original=subjectValues(saved);});
+      state.subjects=fresh||[];populateSubjectSelects();renderSubjectChips();renderSubjectEditor();
+      subjectStatus('ข้อมูลที่เลือกตรงกับฐานข้อมูลแล้ว ไม่มีรายการที่ต้องบันทึกเพิ่ม');return;
+    }
+    // Stable client-generated IDs make retry after a lost response idempotent.
+    const {data,error}=await supabase.from('subjects').upsert(payload,{onConflict:'id'}).select('id');
+    if(error)throw error;
+    if(!payload.every(row=>(data||[]).some(saved=>saved.id===row.id)))throw new Error('เซิร์ฟเวอร์ยังไม่ยืนยันครบทุกวิชา กรุณาลองบันทึกอีกครั้ง');
+    committed=true;
+    editor.rows.forEach(row=>{if(payload.some(p=>p.id===row.id))row.original=subjectValues(row);});
+    if(state.room?.id===editor.roomId){state.subjects=[...(fresh||[]).filter(s=>!payload.some(p=>p.id===s.id)),...payload];populateSubjectSelects();renderSubjectChips();}
+    await loadEverything();
+    editor.saving=false;closeModal('subjectManagerOverlay',true);toast(`บันทึกแล้ว ${payload.length} รายวิชา เลือกใช้ตอนเพิ่มการบ้านได้เลย`);
+  }catch(error){subjectStatus((committed?'บันทึกแล้ว แต่โหลดข้อมูลล่าสุดไม่สำเร็จ: ':'บันทึกไม่สำเร็จ: ')+(error.message||'กรุณาลองใหม่'),true);}
+  finally{editor.saving=false;if(subjectEditor===editor)subjectBusy(false);}
+}
+document.getElementById('btnManageSubjects').addEventListener('click',openSubjectManager);
+document.getElementById('btnAddSubjectRow').addEventListener('click',()=>{if(!subjectEditor||subjectEditor.scanning||subjectEditor.saving)return;subjectEditor.rows.push({id:newSubjectId(),...subjectValues({}),original:null,selected:true});renderSubjectEditor();document.querySelector('#subjectEditorRows .subject-edit-row:last-child input[data-subject-field="subject_name"]')?.focus();});
+document.getElementById('btnScanSchedule').addEventListener('click',()=>document.getElementById('scheduleImageInput').click());
+document.getElementById('scheduleImageInput').addEventListener('change',event=>{const file=event.target.files[0];event.target.value='';scanScheduleFile(file);});
+document.getElementById('btnSaveSubjects').addEventListener('click',saveSubjectEditor);
 </script>
 </body>
 </html>
