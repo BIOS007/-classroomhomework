@@ -1,0 +1,3 @@
+{
+  "functions": { "api/line-webhook.js": { "maxDuration": 30 } }
+}
